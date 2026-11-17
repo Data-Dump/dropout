@@ -75,6 +75,8 @@ interface RestaurantContextType {
   placeOrder: (params: PlaceOrderParams) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   updatePaymentStatus: (orderId: string, status: PaymentStatus) => void;
+  deleteOrder: (orderId: string) => Promise<void>;
+  clearAllOrders: () => Promise<void>;
   getOrderById: (orderId: string) => Order | undefined;
   getOrdersByTable: (tableNumber: TableNumber) => Order[];
 
@@ -388,8 +390,13 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
         const ordersRes = await fetch("/api/orders");
         if (ordersRes.ok) {
           const ordersJson = await ordersRes.json();
-          if (isMounted && Array.isArray(ordersJson?.orders) && ordersJson.orders.length > 0) {
+          if (isMounted && Array.isArray(ordersJson?.orders)) {
             setOrders(ordersJson.orders);
+            try {
+              localStorage.setItem(LOCAL_STORAGE_KEYS.ORDERS, JSON.stringify(ordersJson.orders));
+            } catch {
+              // ignore
+            }
           }
         }
       } catch (err) {
@@ -789,6 +796,25 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
       } catch (e) {
         console.warn("Failed direct payment update to Supabase:", e);
       }
+    }
+  };
+
+  const deleteOrder = async (orderId: string): Promise<void> => {
+    setOrders((prev) => prev.filter((o) => o.id !== orderId && o.orderNumber !== orderId));
+    try {
+      await fetch(`/api/orders?orderId=${encodeURIComponent(orderId)}`, { method: "DELETE" });
+    } catch (e) {
+      console.warn("Failed deleting order:", e);
+    }
+  };
+
+  const clearAllOrders = async (): Promise<void> => {
+    setOrders([]);
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.ORDERS);
+      await fetch("/api/orders?all=true", { method: "DELETE" });
+    } catch (e) {
+      console.warn("Failed clearing all orders:", e);
     }
   };
 
@@ -1336,6 +1362,8 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
         placeOrder,
         updateOrderStatus,
         updatePaymentStatus,
+        deleteOrder,
+        clearAllOrders,
         getOrderById,
         getOrdersByTable,
         staff,

@@ -11,17 +11,26 @@ import {
   ShieldCheck,
   QrCode,
   Bell,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
 export function SettingsView() {
-  const { resetToDefaults } = useRestaurant();
+  const { resetToDefaults, clearAllOrders } = useRestaurant();
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (confirm("Clear local device cache and restore default settings?")) {
+      await clearAllOrders();
       resetToDefaults();
       toast.success("Local cache cleared and settings restored to defaults.");
+    }
+  };
+
+  const handlePurgeOrders = async () => {
+    if (confirm("Are you sure you want to permanently delete all orders and payments from the database? This cannot be undone.")) {
+      await clearAllOrders();
+      toast.success("All orders and payments have been completely purged.");
     }
   };
 
@@ -189,25 +198,47 @@ export function SettingsView() {
         </button>
       </div>
 
-      {/* Danger Zone: Reset Local Cache */}
-      <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 sm:p-6 space-y-3">
-        <div>
-          <h4 className="text-sm font-black text-destructive">
-            Reset Local Device Cache
-          </h4>
-          <p className="text-xs text-muted-foreground">
-            Clear browser cached modifications and restore factory defaults for menu, table capacities, and staff duty statuses on this device.
-          </p>
+      {/* Danger Zone */}
+      <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 sm:p-6 space-y-5">
+        <div className="space-y-3 pb-4 border-b border-destructive/20">
+          <div>
+            <h4 className="text-sm font-black text-destructive">
+              Purge All Live Orders & Payments
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              Permanently delete all active, preparing, and completed customer orders and payment records from the live Supabase database and reset all tables to available.
+            </p>
+          </div>
+
+          <Button
+            variant="destructive"
+            onClick={handlePurgeOrders}
+            className="h-10 rounded-xl text-xs font-bold gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            <span>Delete & Purge All Orders</span>
+          </Button>
         </div>
 
-        <Button
-          variant="destructive"
-          onClick={handleReset}
-          className="h-10 rounded-xl text-xs font-bold gap-2"
-        >
-          <RotateCcw className="h-4 w-4" />
-          <span>Clear Local Cache & Reset</span>
-        </Button>
+        <div className="space-y-3">
+          <div>
+            <h4 className="text-sm font-black text-destructive">
+              Reset Local Device Cache
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              Clear browser cached modifications and restore factory defaults for menu, table capacities, and staff duty statuses on this device.
+            </p>
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={handleReset}
+            className="h-10 rounded-xl text-xs font-bold gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span>Clear Local Cache & Reset</span>
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -745,3 +745,55 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const orderId = searchParams.get("orderId");
+    const clearAll = searchParams.get("all") === "true";
+
+    const supabaseAdmin = getSupabaseAdminClient();
+    if (!supabaseAdmin) {
+      return NextResponse.json({ success: true, message: "Cleared in offline mode" });
+    }
+
+    if (clearAll) {
+      await supabaseAdmin.from("order_items").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabaseAdmin.from("payments").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabaseAdmin.from("orders").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabaseAdmin
+        .from("restaurant_tables")
+        .update({ status: "available" })
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+
+      return NextResponse.json({ success: true, message: "All orders and payments purged successfully." });
+    }
+
+    if (orderId) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
+      if (isUuid) {
+        await supabaseAdmin.from("order_items").delete().eq("order_id", orderId);
+        await supabaseAdmin.from("payments").delete().eq("order_id", orderId);
+        await supabaseAdmin.from("orders").delete().eq("id", orderId);
+      } else {
+        const { data: matched } = await supabaseAdmin
+          .from("orders")
+          .select("id")
+          .eq("order_number", orderId)
+          .maybeSingle();
+
+        if (matched?.id) {
+          await supabaseAdmin.from("order_items").delete().eq("order_id", matched.id);
+          await supabaseAdmin.from("payments").delete().eq("order_id", matched.id);
+          await supabaseAdmin.from("orders").delete().eq("id", matched.id);
+        }
+      }
+      return NextResponse.json({ success: true, message: `Order ${orderId} deleted.` });
+    }
+
+    return NextResponse.json({ error: "Missing orderId or all=true parameter" }, { status: 400 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}

@@ -19,6 +19,7 @@ import {
   Ticket,
   Layers,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -60,7 +61,14 @@ function getComboBreakdown(
 }
 
 export function LiveOrdersView() {
-  const { orders, menuItems, updateOrderStatus, updatePaymentStatus } = useRestaurant();
+  const {
+    orders,
+    menuItems,
+    updateOrderStatus,
+    updatePaymentStatus,
+    deleteOrder,
+    clearAllOrders,
+  } = useRestaurant();
   const [tabFilter, setTabFilter] = useState<"active" | "completed" | "all">("active");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -160,16 +168,34 @@ export function LiveOrdersView() {
           </button>
         </div>
 
-        {/* Search */}
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search table, order, dish..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-input bg-card pl-9 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          />
+        {/* Search & Empty Orders */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {orders.length > 0 && (
+            <button
+              onClick={async () => {
+                if (confirm("Delete all current orders from queue and database?")) {
+                  await clearAllOrders();
+                  toast.success("All orders deleted and queue emptied.");
+                }
+              }}
+              className="px-3 py-1.5 rounded-xl border border-destructive/30 bg-destructive/10 hover:bg-destructive hover:text-white text-destructive text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
+              title="Delete all orders and empty queue"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Empty All Orders</span>
+            </button>
+          )}
+
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search table, order, dish..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-xl border border-input bg-card pl-9 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
         </div>
       </div>
 
@@ -387,6 +413,20 @@ export function LiveOrdersView() {
                           title="Cancel Order"
                         >
                           <XCircle className="h-4 w-4" />
+                        </button>
+
+                        {/* Direct Delete Button */}
+                        <button
+                          onClick={async () => {
+                            if (confirm(`Permanently delete order ${ord.orderNumber}?`)) {
+                              await deleteOrder(ord.id);
+                              toast.success(`Order ${ord.orderNumber} deleted.`);
+                            }
+                          }}
+                          className="px-2.5 py-2 rounded-xl border border-border text-muted-foreground hover:bg-destructive/10 hover:text-destructive font-bold text-xs flex items-center justify-center gap-1 transition-all"
+                          title="Permanently Delete Order"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </div>

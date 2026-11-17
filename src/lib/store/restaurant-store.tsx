@@ -86,9 +86,10 @@ interface RestaurantContextType {
   deleteStaff: (id: string) => void;
   toggleStaffDuty: (id: string) => void;
 
-  // Admin Auth simulation
+  // Admin Auth
   isAdminAuthenticated: boolean;
   adminLogin: (pin: string) => boolean;
+  adminLoginWithCredentials: (account: string, password: string) => Promise<{ success: boolean; error?: string }>;
   adminLogout: () => void;
 
   // Reset state
@@ -1163,10 +1164,35 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
     );
   };
 
-  // Admin Auth & Staff Session
+  // Admin Auth with Supabase Credentials (account & password)
+  const adminLoginWithCredentials = async (account: string, password: string) => {
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ account, password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsAdminAuthenticated(true);
+        const manager = staff.find((s) => s.role === "Manager") || staff[0];
+        setCurrentStaff(manager);
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEYS.ADMIN_AUTH, "true");
+        } catch {
+          // ignore localStorage error
+        }
+        return { success: true };
+      }
+      return { success: false, error: data?.error || "Invalid account or password." };
+    } catch (err) {
+      console.error("adminLoginWithCredentials error:", err);
+      return { success: false, error: "Network error during authentication." };
+    }
+  };
+
+  // Quick PIN clearance (for reports elevation)
   const adminLogin = (pin: string) => {
-    // Master PIN: read from NEXT_PUBLIC_ADMIN_PIN env var, default "1234" if not set.
-    // Set a strong custom PIN in Vercel environment variables for production.
     const masterPin = process.env.NEXT_PUBLIC_ADMIN_PIN || "1234";
     if (pin === masterPin) {
       setIsAdminAuthenticated(true);
@@ -1186,6 +1212,15 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
   const adminLogout = () => {
     setIsAdminAuthenticated(false);
     setCurrentStaff(null);
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.ADMIN_AUTH);
+      const supabase = getSupabaseBrowserClient();
+      if (supabase) {
+        supabase.auth.signOut().catch(() => null);
+      }
+    } catch {
+      // ignore
+    }
   };
 
   const getOrderById = (orderId: string) => {
@@ -1281,6 +1316,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
         toggleStaffDuty,
         isAdminAuthenticated,
         adminLogin,
+        adminLoginWithCredentials,
         adminLogout,
         resetToDefaults,
       }}

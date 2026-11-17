@@ -658,9 +658,26 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
       console.warn("Server order placement error, falling back to local creation:", err);
     }
 
-    // Graceful offline/local fallback
-    const nextOrderNumberInt = 1000 + orders.length + 1;
-    const orderNumber = `DRP-${nextOrderNumberInt}`;
+    // Graceful offline/local fallback (DRP-date-order, e.g. DRP-YYYYMMDD-001)
+    const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+    const yyyy = istNow.getUTCFullYear();
+    const mm = String(istNow.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(istNow.getUTCDate()).padStart(2, "0");
+    const dateStr = `${yyyy}${mm}${dd}`;
+    const prefix = `DRP-${dateStr}-`;
+
+    let maxSeq = 0;
+    for (const ord of orders) {
+      const match = ord.orderNumber?.match(new RegExp(`^${prefix}(\\d+)`));
+      if (match && match[1]) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxSeq) {
+          maxSeq = num;
+        }
+      }
+    }
+    const nextSeq = maxSeq + 1;
+    const orderNumber = `${prefix}${String(nextSeq).padStart(3, "0")}`;
 
     const orderItems = cart.map((c) => ({
       id: `oi-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,

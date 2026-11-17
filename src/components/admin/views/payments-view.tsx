@@ -12,8 +12,23 @@ import {
   Clock,
   Search,
   RefreshCw,
+  Layers,
+  ChevronDown,
+  ChevronUp,
+  Receipt,
+  Phone,
+  Utensils,
 } from "lucide-react";
 import { toast } from "sonner";
+
+interface LedgerItem {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  dietType?: string;
+  specialInstructions?: string;
+}
 
 interface LedgerPayment {
   id: string;
@@ -31,6 +46,26 @@ interface LedgerPayment {
   providerReferenceId?: string;
   settledAt?: string;
   createdAt: string;
+  items: LedgerItem[];
+}
+
+interface GroupedPayment {
+  groupId: string;
+  isGroup: boolean;
+  orderCount: number;
+  orderIds: string[];
+  orderNumbers: string[];
+  tableNumber: string;
+  customerName?: string;
+  customerPhone?: string;
+  paymentMethod: PaymentMethod;
+  totalAmount: number;
+  status: PaymentStatus;
+  createdAt: string;
+  merchantTransactionId?: string;
+  providerReferenceId?: string;
+  orders: LedgerPayment[];
+  combinedItems: Array<LedgerItem & { orderNumber: string }>;
 }
 
 export function PaymentsView() {
@@ -42,6 +77,14 @@ export function PaymentsView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [checkingTxnId, setCheckingTxnId] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (groupId: string) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }));
+  };
 
   const fetchPayments = useCallback(async () => {
     try {
@@ -61,11 +104,43 @@ export function PaymentsView() {
     fetchPayments();
   }, [fetchPayments]);
 
-  // Combined transactions from DB or mapped from store
+  // Combined transactions from DB or mapped from store, enriched with item details
   const allTransactions: LedgerPayment[] = useMemo(() => {
     if (dbPayments.length > 0) {
-      return dbPayments;
+      return dbPayments.map((p) => {
+        let items: LedgerItem[] = (p.items || []).map((it) => ({
+          id: it.id,
+          name: it.name,
+          quantity: it.quantity,
+          price: it.price,
+          dietType: it.dietType,
+          specialInstructions: it.specialInstructions,
+        }));
+
+        // Fallback to store orders if dbPayments row lacks items
+        if (items.length === 0) {
+          const matchedOrder = orders.find(
+            (o) => o.id === p.orderId || o.orderNumber === p.orderNumber
+          );
+          if (matchedOrder && matchedOrder.items) {
+            items = matchedOrder.items.map((oi) => ({
+              id: oi.id,
+              name: oi.name,
+              quantity: oi.quantity,
+              price: oi.price,
+              dietType: oi.dietType,
+              specialInstructions: oi.specialInstructions,
+            }));
+          }
+        }
+
+        return {
+          ...p,
+          items,
+        };
+      });
     }
+
     return orders.map((o) => ({
       id: `p-${o.id}`,
       orderId: o.id,
@@ -80,27 +155,133 @@ export function PaymentsView() {
       provider: "phonepe",
       merchantTransactionId: o.idempotencyKey ? `MT_${o.orderNumber}_${o.idempotencyKey.slice(0, 8)}` : undefined,
       createdAt: o.createdAt,
+      items: (o.items || []).map((oi) => ({
+        id: oi.id,
+        name: oi.name,
+        quantity: oi.quantity,
+        price: oi.price,
+        dietType: oi.dietType,
+        specialInstructions: oi.specialInstructions,
+      })),
     }));
   }, [dbPayments, orders]);
 
-  const filteredPayments = useMemo(() => {
-    return allTransactions.filter((p) => {
-      const paySt = normalizePaymentStatus(p.status);
-      if (methodFilter !== "all" && p.paymentMethod !== methodFilter) return false;
+  // Group Pay at Counter orders placed from the same table with the same contact phone
+  const groupedPayments: GroupedPayment[] = useMemo(() => {
+    const groupsMap = new Map<string, LedgerPayment[]>();
+
+    for (const payment of allTransactions) {
+      const paySt = normalizePaymentStatus(payment.status);
+      const cleanPhone = (payment.customerPhone || "").replace(/\D/g, "").slice(-10);
+      const cleanTable = payment.tableNumber.trim().toLowerCase();
+
+      // Only group Pay at Counter orders with matching table & valid contact number
+      if (payment.paymentMethod === "counter" && cleanPhone && cleanPhone.length === 10) {
+        // Active pending orders group together for combined bill settlement
+        // Settled orders group together by table, phone, and date
+        const groupKey =
+          paySt === "PENDING"
+            ? `counter_${cleanTable}_${cleanPhone}_pending`
+            : `counter_${cleanTable}_${cleanPhone}_settled_${payment.createdAt.slice(0, 10)}`;
+
+        if (!groupsMap.has(groupKey)) {
+          groupsMap.set(groupKey, []);
+        }
+        groupsMap.get(groupKey)!.push(payment);
+      } else {
+        // Individual entry for online UPI payments or standalone orders
+        const standaloneKey = `single_${payment.id || payment.orderId}`;
+        groupsMap.set(standaloneKey, [payment]);
+      }
+    }
+
+    const result: GroupedPayment[] = [];
+
+    groupsMap.forEach((txns, key) => {
+      // Sort transactions chronologically (newest first)
+      txns.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      const latest = txns[0];
+      const isGroup = txns.length > 1;
+      const orderIds = txns.map((t) => t.orderId);
+      const orderNumbers = txns.map((t) => t.orderNumber);
+      const totalAmount = txns.reduce((sum, t) => sum + t.amount, 0);
+
+      // Status: if any order is PENDING, the combined group status is PENDING
+      const hasPending = txns.some((t) => normalizePaymentStatus(t.status) === "PENDING");
+      const hasFailed = txns.some((t) => normalizePaymentStatus(t.status) === "FAILED");
+      const hasRefunded = txns.every((t) => normalizePaymentStatus(t.status) === "REFUNDED");
+      const status: PaymentStatus = hasPending
+        ? "PENDING"
+        : hasFailed
+        ? "FAILED"
+        : hasRefunded
+        ? "REFUNDED"
+        : "PAID";
+
+      // Combine all items across all orders in this group
+      const combinedItems: Array<LedgerItem & { orderNumber: string }> = [];
+      for (const t of txns) {
+        for (const it of t.items) {
+          combinedItems.push({
+            ...it,
+            orderNumber: t.orderNumber,
+          });
+        }
+      }
+
+      result.push({
+        groupId: key,
+        isGroup,
+        orderCount: txns.length,
+        orderIds,
+        orderNumbers,
+        tableNumber: latest.tableNumber,
+        customerName: latest.customerName,
+        customerPhone: latest.customerPhone,
+        paymentMethod: latest.paymentMethod,
+        totalAmount,
+        status,
+        createdAt: latest.createdAt,
+        merchantTransactionId: latest.merchantTransactionId,
+        providerReferenceId: latest.providerReferenceId,
+        orders: txns,
+        combinedItems,
+      });
+    });
+
+    // Sort grouped list with newest orders on top
+    result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return result;
+  }, [allTransactions]);
+
+  const filteredGroups = useMemo(() => {
+    return groupedPayments.filter((g) => {
+      const paySt = normalizePaymentStatus(g.status);
+      if (methodFilter !== "all" && g.paymentMethod !== methodFilter) return false;
       if (statusFilter !== "all" && paySt !== statusFilter.toUpperCase()) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
+        const matchesOrder = g.orderNumbers.some((num) => num.toLowerCase().includes(q));
+        const matchesTable = g.tableNumber.toLowerCase().includes(q);
+        const matchesName = g.customerName?.toLowerCase().includes(q) || false;
+        const matchesPhone = g.customerPhone?.includes(q) || false;
+        const matchesItem = g.combinedItems.some((it) => it.name.toLowerCase().includes(q));
+        const matchesTxn = g.merchantTransactionId?.toLowerCase().includes(q) || false;
+
         return (
-          p.orderNumber.toLowerCase().includes(q) ||
-          p.tableNumber.toLowerCase().includes(q) ||
-          p.customerName?.toLowerCase().includes(q) ||
-          p.customerPhone?.includes(q) ||
-          p.merchantTransactionId?.toLowerCase().includes(q)
+          matchesOrder ||
+          matchesTable ||
+          matchesName ||
+          matchesPhone ||
+          matchesItem ||
+          matchesTxn
         );
       }
       return true;
     });
-  }, [allTransactions, methodFilter, statusFilter, searchQuery]);
+  }, [groupedPayments, methodFilter, statusFilter, searchQuery]);
 
   const metrics = useMemo(() => {
     const totalCollected = allTransactions
@@ -127,12 +308,31 @@ export function PaymentsView() {
     };
   }, [allTransactions]);
 
-  const handleUpdatePayment = (orderId: string, status: PaymentStatus) => {
-    updatePaymentStatus(orderId, status);
+  const handleUpdatePayment = async (orderId: string, status: PaymentStatus) => {
+    await updatePaymentStatus(orderId, status);
     setDbPayments((prev) =>
       prev.map((p) => (p.orderId === orderId ? { ...p, status } : p))
     );
     toast.success(`Payment status marked as ${status}`);
+  };
+
+  const handleUpdateGroupPayment = async (orderIds: string[], status: PaymentStatus, tableNumber?: string) => {
+    try {
+      for (const id of orderIds) {
+        await updatePaymentStatus(id, status);
+      }
+      setDbPayments((prev) =>
+        prev.map((p) => (orderIds.includes(p.orderId) ? { ...p, status } : p))
+      );
+      toast.success(
+        orderIds.length > 1
+          ? `Settled combined tab for ${tableNumber || "Table"} (${orderIds.length} orders marked as ${status})`
+          : `Payment status marked as ${status}`
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update payment status");
+    }
   };
 
   const handleRecheckPhonePe = async (txnId?: string, orderId?: string) => {
@@ -291,11 +491,11 @@ export function PaymentsView() {
         </div>
 
         {/* Search */}
-        <div className="relative min-w-[240px]">
+        <div className="relative min-w-[260px]">
           <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search order #, table, Txn ID..."
+            placeholder="Search order #, table, dish, phone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full rounded-xl border border-input bg-card pl-8 pr-3 py-1.5 text-xs focus:ring-2 focus:ring-primary"
@@ -303,126 +503,403 @@ export function PaymentsView() {
         </div>
       </div>
 
-      {/* Transactions Table */}
+      {/* Transactions & Consolidated Tabs Table */}
       <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-secondary/50 border-b border-border/60 text-muted-foreground uppercase font-bold text-[10px] tracking-wider">
               <tr>
-                <th className="py-3 px-4">Order Ref</th>
-                <th className="py-3 px-4">Dining Table</th>
-                <th className="py-3 px-4">Payment Method</th>
-                <th className="py-3 px-4">Merchant Txn ID / Reference</th>
-                <th className="py-3 px-4">Amount</th>
+                <th className="py-3 px-4">Order Reference</th>
+                <th className="py-3 px-4">Dining Table & Guest</th>
+                <th className="py-3 px-4">Items Ordered</th>
+                <th className="py-3 px-4">Method</th>
+                <th className="py-3 px-4">Total Amount</th>
                 <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <th className="py-3 px-4 text-right">Desk Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
-              {filteredPayments.map((p) => {
-                const paySt = normalizePaymentStatus(p.status);
+              {filteredGroups.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                    <Receipt className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                    <p className="font-semibold text-sm">No payment records found</p>
+                    <p className="text-xs">Adjust your search or filter criteria above.</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredGroups.map((group) => {
+                  const paySt = normalizePaymentStatus(group.status);
+                  const isExpanded = Boolean(expandedGroups[group.groupId]);
 
-                return (
-                  <tr key={p.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="py-3 px-4">
-                      <span className="font-mono font-bold text-foreground block">
-                        {p.orderNumber}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {new Date(p.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 font-black text-foreground">
-                      {p.tableNumber}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary font-semibold text-[11px]">
-                        {p.paymentMethod === "upi_online" ? (
-                          <>
-                            <QrCode className="h-3 w-3 text-primary" />
-                            <span>PhonePe UPI</span>
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard className="h-3 w-3 text-stone-600" />
-                            <span>Counter Desk</span>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      {p.merchantTransactionId ? (
-                        <div className="space-y-0.5">
-                          <span className="font-mono text-[10px] text-foreground font-semibold block truncate max-w-[160px]" title={p.merchantTransactionId}>
-                            {p.merchantTransactionId}
-                          </span>
-                          {p.providerReferenceId && (
-                            <span className="text-[10px] text-muted-foreground block truncate max-w-[160px]" title={p.providerReferenceId}>
-                              PSP: {p.providerReferenceId}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground italic text-[11px]">Counter Desk Register</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 font-black text-sm text-foreground">
-                      {formatCurrency(p.amount)}
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge
-                        variant={
-                          paySt === "PAID"
-                            ? "emerald"
-                            : paySt === "REFUNDED"
-                            ? "stone"
-                            : paySt === "FAILED"
-                            ? "destructive"
-                            : "amber"
-                        }
-                        className="text-[10px] font-bold uppercase tracking-wider"
+                  return (
+                    <React.Fragment key={group.groupId}>
+                      <tr
+                        className={`hover:bg-muted/30 transition-colors ${
+                          group.isGroup ? "bg-amber-500/5" : ""
+                        }`}
                       >
-                        {paySt}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {/* If PhonePe UPI and pending, allow provider recheck */}
-                        {p.paymentMethod === "upi_online" && paySt !== "PAID" && (
-                          <button
-                            onClick={() => handleRecheckPhonePe(p.merchantTransactionId, p.orderId)}
-                            disabled={checkingTxnId === p.merchantTransactionId}
-                            className="px-2.5 py-1 rounded-lg border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[10px] flex items-center gap-1"
-                            title="Query PhonePe Status API directly"
-                          >
-                            <RefreshCw className={`h-3 w-3 ${checkingTxnId === p.merchantTransactionId ? "animate-spin" : ""}`} />
-                            <span>Check PhonePe</span>
-                          </button>
-                        )}
+                        {/* Order Reference */}
+                        <td className="py-3.5 px-4 align-top">
+                          <div className="space-y-1">
+                            {group.isGroup ? (
+                              <div className="flex flex-col gap-1">
+                                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-800 text-[10px] font-bold">
+                                  <Layers className="h-3 w-3" />
+                                  <span>Combined Tab ({group.orderCount} Orders)</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {group.orderNumbers.map((num) => (
+                                    <span
+                                      key={num}
+                                      className="font-mono text-[11px] font-bold text-foreground bg-secondary px-1.5 py-0.5 rounded"
+                                    >
+                                      {num}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="font-mono font-bold text-foreground text-xs block">
+                                {group.orderNumbers[0]}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-muted-foreground block">
+                              {new Date(group.createdAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                        </td>
 
-                        {/* For Counter payments, manual desk mark paid */}
-                        {p.paymentMethod === "counter" && paySt !== "PAID" && (
-                          <button
-                            onClick={() => handleUpdatePayment(p.orderId, "PAID")}
-                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-2xs"
-                          >
-                            Mark Paid at Desk
-                          </button>
-                        )}
+                        {/* Dining Table & Guest */}
+                        <td className="py-3.5 px-4 align-top">
+                          <div className="space-y-0.5">
+                            <span className="font-black text-foreground block text-xs">
+                              {group.tableNumber}
+                            </span>
+                            {group.customerName && (
+                              <span className="text-[11px] font-semibold text-muted-foreground block truncate max-w-[130px]">
+                                {group.customerName}
+                              </span>
+                            )}
+                            {group.customerPhone && (
+                              <span className="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
+                                <Phone className="h-2.5 w-2.5" />
+                                <span>{group.customerPhone}</span>
+                              </span>
+                            )}
+                          </div>
+                        </td>
 
-                        {paySt === "PAID" && (
-                          <button
-                            onClick={() => handleUpdatePayment(p.orderId, "REFUNDED")}
-                            className="px-2 py-1 rounded-lg border border-border text-stone-600 hover:bg-muted font-bold text-[10px]"
+                        {/* Items Ordered — Combined list with preview */}
+                        <td className="py-3.5 px-4 align-top">
+                          <div className="space-y-1 max-w-[240px] sm:max-w-[320px]">
+                            {group.combinedItems.length === 0 ? (
+                              <span className="text-[11px] text-muted-foreground italic">
+                                Standard ticket items
+                              </span>
+                            ) : (
+                              <div className="space-y-1">
+                                <div className="flex flex-wrap gap-1">
+                                  {group.combinedItems.slice(0, 3).map((item, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary text-[11px] font-medium text-foreground border border-border/40"
+                                      title={group.isGroup ? `From order ${item.orderNumber}` : undefined}
+                                    >
+                                      <span className="font-bold text-primary">{item.quantity}x</span>
+                                      <span className="truncate max-w-[110px]">{item.name}</span>
+                                      <span className="text-[10px] text-muted-foreground">
+                                        {formatCurrency(item.price * item.quantity)}
+                                      </span>
+                                    </span>
+                                  ))}
+                                </div>
+
+                                {group.combinedItems.length > 3 && (
+                                  <button
+                                    onClick={() => toggleExpand(group.groupId)}
+                                    className="text-[10px] font-bold text-primary hover:underline inline-flex items-center gap-1"
+                                  >
+                                    <span>
+                                      {isExpanded
+                                        ? "Hide items"
+                                        : `+${group.combinedItems.length - 3} more items`}
+                                    </span>
+                                    {isExpanded ? (
+                                      <ChevronUp className="h-3 w-3" />
+                                    ) : (
+                                      <ChevronDown className="h-3 w-3" />
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+
+                            {group.isGroup && (
+                              <div className="text-[10px] font-medium text-amber-700 flex items-center gap-1 pt-0.5">
+                                <Utensils className="h-2.5 w-2.5" />
+                                <span>
+                                  {group.combinedItems.reduce((acc, it) => acc + it.quantity, 0)} items total across {group.orderCount} tickets
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Payment Method */}
+                        <td className="py-3.5 px-4 align-top">
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary font-semibold text-[11px]">
+                            {group.paymentMethod === "upi_online" ? (
+                              <>
+                                <QrCode className="h-3 w-3 text-primary" />
+                                <span>PhonePe UPI</span>
+                              </>
+                            ) : (
+                              <>
+                                <CreditCard className="h-3 w-3 text-stone-600" />
+                                <span>Counter Desk</span>
+                              </>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Total Amount */}
+                        <td className="py-3.5 px-4 align-top">
+                          <div className="space-y-0.5">
+                            <span className="font-black text-sm text-foreground block">
+                              {formatCurrency(group.totalAmount)}
+                            </span>
+                            {group.isGroup && (
+                              <span className="text-[10px] text-muted-foreground block">
+                                {group.orders.map((o) => formatCurrency(o.amount)).join(" + ")}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-3.5 px-4 align-top">
+                          <Badge
+                            variant={
+                              paySt === "PAID"
+                                ? "emerald"
+                                : paySt === "REFUNDED"
+                                ? "stone"
+                                : paySt === "FAILED"
+                                ? "destructive"
+                                : "amber"
+                            }
+                            className="text-[10px] font-bold uppercase tracking-wider"
                           >
-                            Refund
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                            {paySt}
+                          </Badge>
+                        </td>
+
+                        {/* Desk Actions */}
+                        <td className="py-3.5 px-4 text-right align-top">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* If Grouped Counter and pending: Settle all orders together */}
+                            {group.isGroup && paySt !== "PAID" && (
+                              <button
+                                onClick={() =>
+                                  handleUpdateGroupPayment(
+                                    group.orderIds,
+                                    "PAID",
+                                    group.tableNumber
+                                  )
+                                }
+                                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-sm flex items-center gap-1 transition-transform active:scale-95"
+                              >
+                                <CheckCircle2 className="h-3 w-3" />
+                                <span>
+                                  Mark All Paid ({group.orderCount} Orders)
+                                </span>
+                              </button>
+                            )}
+
+                            {/* Standalone Counter pending: Settle single order */}
+                            {!group.isGroup &&
+                              group.paymentMethod === "counter" &&
+                              paySt !== "PAID" && (
+                                <button
+                                  onClick={() =>
+                                    handleUpdatePayment(group.orderIds[0], "PAID")
+                                  }
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-2xs"
+                                >
+                                  Mark Paid at Desk
+                                </button>
+                              )}
+
+                            {/* PhonePe UPI pending: Provider status recheck */}
+                            {group.paymentMethod === "upi_online" &&
+                              paySt !== "PAID" && (
+                                <button
+                                  onClick={() =>
+                                    handleRecheckPhonePe(
+                                      group.merchantTransactionId,
+                                      group.orderIds[0]
+                                    )
+                                  }
+                                  disabled={
+                                    checkingTxnId === group.merchantTransactionId
+                                  }
+                                  className="px-2.5 py-1 rounded-lg border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[10px] flex items-center gap-1"
+                                  title="Query PhonePe Status API directly"
+                                >
+                                  <RefreshCw
+                                    className={`h-3 w-3 ${
+                                      checkingTxnId ===
+                                      group.merchantTransactionId
+                                        ? "animate-spin"
+                                        : ""
+                                    }`}
+                                  />
+                                  <span>Check PhonePe</span>
+                                </button>
+                              )}
+
+                            {/* Refund action if settled */}
+                            {paySt === "PAID" && (
+                              <button
+                                onClick={() =>
+                                  handleUpdateGroupPayment(
+                                    group.orderIds,
+                                    "REFUNDED",
+                                    group.tableNumber
+                                  )
+                                }
+                                className="px-2 py-1 rounded-lg border border-border text-stone-600 hover:bg-muted font-bold text-[10px]"
+                              >
+                                Refund
+                              </button>
+                            )}
+
+                            {/* Expand toggle */}
+                            <button
+                              onClick={() => toggleExpand(group.groupId)}
+                              className="p-1 rounded-lg hover:bg-muted text-muted-foreground"
+                              title={isExpanded ? "Collapse Details" : "View Full Item Breakdown"}
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="h-3.5 w-3.5" />
+                              ) : (
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Expandable Full Item & Ticket Breakdown */}
+                      {isExpanded && (
+                        <tr className="bg-muted/20 border-b border-border/60">
+                          <td colSpan={7} className="p-4">
+                            <div className="rounded-xl border border-border/80 bg-card p-4 space-y-3 shadow-2xs">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Receipt className="h-4 w-4 text-primary" />
+                                  <span className="font-bold text-xs uppercase tracking-wider text-foreground">
+                                    {group.isGroup
+                                      ? `Item Breakdown Across ${group.orderCount} Combined Order Tickets`
+                                      : `Itemized Order Details (${group.orderNumbers[0]})`}
+                                  </span>
+                                </div>
+                                <span className="font-mono font-bold text-xs text-primary">
+                                  Total: {formatCurrency(group.totalAmount)}
+                                </span>
+                              </div>
+
+                              {/* Per Ticket Breakdown if grouped */}
+                              {group.isGroup ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                                  {group.orders.map((subOrder) => (
+                                    <div
+                                      key={subOrder.orderId}
+                                      className="rounded-lg border border-border/70 bg-background/80 p-3 space-y-2"
+                                    >
+                                      <div className="flex items-center justify-between border-b border-border/50 pb-1.5 text-xs">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="font-mono font-bold text-foreground">
+                                            {subOrder.orderNumber}
+                                          </span>
+                                          <span className="text-[10px] text-muted-foreground">
+                                            {new Date(
+                                              subOrder.createdAt
+                                            ).toLocaleTimeString([], {
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            })}
+                                          </span>
+                                        </div>
+                                        <span className="font-bold text-foreground">
+                                          {formatCurrency(subOrder.amount)}
+                                        </span>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        {subOrder.items.map((it, iIdx) => (
+                                          <div
+                                            key={iIdx}
+                                            className="flex items-center justify-between text-xs py-0.5"
+                                          >
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="font-bold text-primary text-[11px]">
+                                                {it.quantity}x
+                                              </span>
+                                              <span className="font-medium text-foreground">
+                                                {it.name}
+                                              </span>
+                                            </div>
+                                            <span className="text-muted-foreground text-[11px]">
+                                              {formatCurrency(
+                                                it.price * it.quantity
+                                              )}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="space-y-1.5 pt-1">
+                                  {group.combinedItems.map((it, iIdx) => (
+                                    <div
+                                      key={iIdx}
+                                      className="flex items-center justify-between text-xs py-1 border-b border-border/30 last:border-0"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-bold text-primary">
+                                          {it.quantity}x
+                                        </span>
+                                        <span className="font-medium text-foreground">
+                                          {it.name}
+                                        </span>
+                                        {it.specialInstructions && (
+                                          <span className="text-[10px] text-muted-foreground italic">
+                                            ({it.specialInstructions})
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="font-mono font-semibold text-foreground">
+                                        {formatCurrency(it.price * it.quantity)}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

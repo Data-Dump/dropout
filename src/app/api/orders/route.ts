@@ -37,6 +37,52 @@ interface CreateOrderRequestBody {
   items: IncomingOrderItem[];
 }
 
+/**
+ * Generates formatted, sequential order number: DRP-YYYYMMDD-001, 002, etc.
+ * Uses Indian Standard Time (UTC+5:30) for daily calendar reset.
+ */
+async function generateNextOrderNumber(supabaseAdmin: ReturnType<typeof getSupabaseAdminClient>): Promise<string> {
+  const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const yyyy = istNow.getUTCFullYear();
+  const mm = String(istNow.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(istNow.getUTCDate()).padStart(2, "0");
+  const dateStr = `${yyyy}${mm}${dd}`;
+  const prefix = `DRP-${dateStr}-`;
+
+  if (supabaseAdmin) {
+    try {
+      const { data: latestOrders } = await supabaseAdmin
+        .from("orders")
+        .select("order_number")
+        .ilike("order_number", `${prefix}%`)
+        .order("created_at", { ascending: false })
+        .limit(25);
+
+      let maxSeq = 0;
+      if (latestOrders && latestOrders.length > 0) {
+        for (const row of latestOrders) {
+          const match = row.order_number?.match(new RegExp(`^${prefix}(\\d+)`));
+          if (match && match[1]) {
+            const num = parseInt(match[1], 10);
+            if (!isNaN(num) && num > maxSeq) {
+              maxSeq = num;
+            }
+          }
+        }
+      }
+
+      const nextSeq = maxSeq + 1;
+      return `${prefix}${String(nextSeq).padStart(3, "0")}`;
+    } catch (err) {
+      console.warn("Error calculating sequential order number from Supabase:", err);
+    }
+  }
+
+  // Fallback random sequence if offline
+  const fallbackSeq = Math.floor(1 + Math.random() * 999);
+  return `${prefix}${String(fallbackSeq).padStart(3, "0")}`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const headerIdempotency = req.headers.get("x-idempotency-key");
@@ -385,8 +431,8 @@ export async function POST(req: NextRequest) {
     const taxRupees = paiseToRupees(taxPaise);
     const totalRupees = paiseToRupees(totalPaise);
 
-    // 8. Human-readable unique Order Number (DRP-XXXX)
-    const orderNumber = `DRP-${Math.floor(1000 + Math.random() * 9000)}`;
+    // 8. Human-readable unique sequential Order Number (DRP-date-order, e.g. DRP-YYYYMMDD-001)
+    const orderNumber = await generateNextOrderNumber(supabaseAdmin);
     const nowIso = new Date().toISOString();
     let createdOrderId = `ord-${Date.now()}`;
 

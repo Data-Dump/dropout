@@ -5,6 +5,15 @@ import { PaymentMethod, PaymentStatus } from "@/types";
 
 export const dynamic = "force-dynamic";
 
+export interface AdminPaymentItem {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  dietType?: string;
+  specialInstructions?: string;
+}
+
 export interface AdminPaymentTransaction {
   id: string;
   orderId: string;
@@ -21,6 +30,7 @@ export interface AdminPaymentTransaction {
   providerReferenceId?: string;
   settledAt?: string;
   createdAt: string;
+  items?: AdminPaymentItem[];
 }
 
 export async function GET() {
@@ -50,7 +60,15 @@ export async function GET() {
           order_number,
           table_number,
           customer_name,
-          customer_phone
+          customer_phone,
+          order_items (
+            id,
+            item_name,
+            unit_price_paise,
+            quantity,
+            diet_type,
+            special_instructions
+          )
         )
       `)
       .order("created_at", { ascending: false })
@@ -67,7 +85,24 @@ export async function GET() {
         table_number?: string;
         customer_name?: string | null;
         customer_phone?: string | null;
+        order_items?: Array<{
+          id: string;
+          item_name: string;
+          unit_price_paise: number;
+          quantity: number;
+          diet_type?: string;
+          special_instructions?: string | null;
+        }>;
       }) || {};
+
+      const items: AdminPaymentItem[] = (ord.order_items || []).map((it) => ({
+        id: it.id,
+        name: it.item_name,
+        quantity: it.quantity,
+        price: paiseToRupees(it.unit_price_paise),
+        dietType: it.diet_type || "veg",
+        specialInstructions: it.special_instructions || undefined,
+      }));
 
       return {
         id: row.id,
@@ -85,6 +120,7 @@ export async function GET() {
         providerReferenceId: row.provider_reference_id || undefined,
         settledAt: row.settled_at || undefined,
         createdAt: row.created_at,
+        items,
       };
     });
 

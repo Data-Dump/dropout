@@ -55,11 +55,26 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export function AdminLayout({ activeTab, onTabChange, children }: AdminLayoutProps) {
-  const { orders, tables, adminLogout, currentStaff } = useRestaurant();
+  const { orders, tables, adminLogout, currentStaff, adminRole } = useRestaurant();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const [selectedTableForQR, setSelectedTableForQR] = useState<TableState | null>(null);
   const [qrModalOpen, setQrModalOpen] = useState(false);
+
+  // If kitchen role, only orders section is accessible
+  const visibleNavItems = React.useMemo(() => {
+    if (adminRole === "kitchen") {
+      return NAV_ITEMS.filter((item) => item.id === "orders");
+    }
+    return NAV_ITEMS;
+  }, [adminRole]);
+
+  // Keep kitchen role locked to orders view
+  useEffect(() => {
+    if (adminRole === "kitchen" && activeTab !== "orders") {
+      onTabChange("orders");
+    }
+  }, [adminRole, activeTab, onTabChange]);
 
   useEffect(() => {
     const updateClock = () => {
@@ -165,6 +180,15 @@ export function AdminLayout({ activeTab, onTabChange, children }: AdminLayoutPro
                 <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase leading-none mt-1 block">
                   Cafe & Restro POS
                 </span>
+                {adminRole === "kitchen" ? (
+                  <span className="inline-block px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-800 text-[9px] font-extrabold uppercase tracking-wide mt-1.5">
+                    Kitchen • Orders Only
+                  </span>
+                ) : (
+                  <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 text-[9px] font-extrabold uppercase tracking-wide mt-1.5">
+                    SuperAdmin
+                  </span>
+                )}
               </div>
             </div>
 
@@ -178,7 +202,7 @@ export function AdminLayout({ activeTab, onTabChange, children }: AdminLayoutPro
 
           {/* Navigation Items List */}
           <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-            {NAV_ITEMS.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
 
@@ -234,10 +258,16 @@ export function AdminLayout({ activeTab, onTabChange, children }: AdminLayoutPro
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-[11px] font-bold text-foreground">
-                  {currentStaff ? `${currentStaff.name} (${currentStaff.role})` : "Rahul (Manager)"}
+                  {adminRole === "kitchen"
+                    ? "Kitchen Station"
+                    : currentStaff
+                    ? `${currentStaff.name} (SuperAdmin)`
+                    : "SuperAdmin"}
                 </span>
               </div>
-              <span className="text-[10px] text-muted-foreground">On Duty</span>
+              <span className="text-[10px] text-muted-foreground font-semibold">
+                {adminRole === "kitchen" ? "Orders" : "Full Access"}
+              </span>
             </div>
 
             <div className="flex items-center gap-2">

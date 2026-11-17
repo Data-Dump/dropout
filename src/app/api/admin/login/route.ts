@@ -4,31 +4,62 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-const PREDEFINED_ADMIN_EMAIL = (process.env.ADMIN_DEFAULT_EMAIL || "admin@dropoutcafe.in").toLowerCase().trim();
-const PREDEFINED_ADMIN_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || "Dropout@2026";
+interface PredefinedRoleAccount {
+  account: string;
+  email: string;
+  passwordDefault: string;
+  role: "superadmin" | "kitchen";
+  name: string;
+}
+
+const PREDEFINED_ACCOUNTS: PredefinedRoleAccount[] = [
+  {
+    account: "superadmin",
+    email: "superadmin@dropoutcafe.in",
+    passwordDefault: process.env.SUPERADMIN_PASSWORD || "Admin@8081",
+    role: "superadmin",
+    name: "SuperAdmin",
+  },
+  {
+    account: "kitchen",
+    email: "kitchen@dropoutcafe.in",
+    passwordDefault: process.env.KITCHEN_PASSWORD || "Kitchen@8082",
+    role: "kitchen",
+    name: "Kitchen Display",
+  },
+];
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const rawAccount = (body?.account || "").trim();
+    const rawAccount = (body?.account || body?.role || body?.username || "").trim().toLowerCase();
     const rawPassword = (body?.password || "").trim();
 
     if (!rawAccount || !rawPassword) {
       return NextResponse.json(
-        { error: "Account and password are required." },
+        { error: "Username/Account and password are required." },
         { status: 400 }
       );
     }
 
-    // Normalize username to full email if no domain is provided
-    const email = rawAccount.includes("@")
-      ? rawAccount.toLowerCase()
-      : `${rawAccount.toLowerCase()}@dropoutcafe.in`;
+    // Match predefined account definition
+    const matchedPredefined = PREDEFINED_ACCOUNTS.find(
+      (a) =>
+        a.account === rawAccount ||
+        a.email === rawAccount ||
+        (rawAccount === "admin" && a.role === "superadmin")
+    );
+
+    const email = matchedPredefined
+      ? matchedPredefined.email
+      : rawAccount.includes("@")
+      ? rawAccount
+      : `${rawAccount}@dropoutcafe.in`;
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    let authenticatedUser: { id: string; email: string; role: string; name: string } | null = null;
+    let authenticatedUser: { id: string; email: string; role: "superadmin" | "kitchen"; name: string } | null = null;
     let authSession: unknown = null;
 
     if (supabaseUrl && anonKey) {
@@ -41,82 +72,72 @@ export async function POST(req: NextRequest) {
       });
 
       if (!signInError && signInData?.user) {
+        const metaRole = (signInData.user.user_metadata?.role as string) || "";
+        const resolvedRole: "superadmin" | "kitchen" =
+          metaRole === "kitchen" || email.includes("kitchen") ? "kitchen" : "superadmin";
+
         authenticatedUser = {
           id: signInData.user.id,
           email: signInData.user.email || email,
-          role: (signInData.user.user_metadata?.role as string) || "admin",
-          name: (signInData.user.user_metadata?.name as string) || "DROPOUT Administrator",
+          role: resolvedRole,
+          name: (signInData.user.user_metadata?.name as string) || (resolvedRole === "kitchen" ? "Kitchen Staff" : "SuperAdmin"),
         };
         authSession = signInData.session;
-      } else {
-        // 2. If user does not exist in Supabase yet, check against predefined credentials
-        const matchesPredefinedEmail = email === PREDEFINED_ADMIN_EMAIL || rawAccount.toLowerCase() === "admin";
-        const matchesPredefinedPassword = rawPassword === PREDEFINED_ADMIN_PASSWORD;
+      } else if (matchedPredefined && rawPassword === matchedPredefined.passwordDefault) {
+        // 2. Predefined fallback: if user doesn't exist yet in Supabase Auth, auto-provision
+        const adminClient = getSupabaseAdminClient();
+        if (adminClient) {
+          try {
+            const { data: created } = await adminClient.auth.admin.createUser({
+              email: matchedPredefined.email,
+              password: matchedPredefined.passwordDefault,
+              email_confirm: true,
+              user_metadata: { role: matchedPredefined.role, name: matchedPredefined.name },
+            });
 
-        if (matchesPredefinedEmail && matchesPredefinedPassword) {
-          const adminClient = getSupabaseAdminClient();
-          if (adminClient) {
-            try {
-              // Auto-seed predefined admin account in Supabase Auth
-              const { data: created, error: createError } = await adminClient.auth.admin.createUser({
-                email: PREDEFINED_ADMIN_EMAIL,
-                password: PREDEFINED_ADMIN_PASSWORD,
-                email_confirm: true,
-                user_metadata: { role: "admin", name: "DROPOUT Administrator" },
+            if (created?.user) {
+              await adminClient.from("profiles").upsert({
+                id: created.user.id,
+                email: matchedPredefined.email,
+                full_name: matchedPredefined.name,
+                role: matchedPredefined.role,
+                is_active: true,
               });
 
-              if (!createError && created?.user) {
-                // Also ensure profile row exists
-                await adminClient.from("profiles").upsert({
-                  id: created.user.id,
-                  email: PREDEFINED_ADMIN_EMAIL,
-                  full_name: "DROPOUT Administrator",
-                  phone: "+91 96446 79988",
-                  role: "admin",
-                  is_active: true,
-                });
-
-                authenticatedUser = {
-                  id: created.user.id,
-                  email: PREDEFINED_ADMIN_EMAIL,
-                  role: "admin",
-                  name: "DROPOUT Administrator",
-                };
-              }
-            } catch (seedErr) {
-              console.warn("Could not auto-seed admin in Supabase:", seedErr);
+              authenticatedUser = {
+                id: created.user.id,
+                email: matchedPredefined.email,
+                role: matchedPredefined.role,
+                name: matchedPredefined.name,
+              };
             }
-          }
-
-          // Authorize as predefined administrator
-          if (!authenticatedUser) {
-            authenticatedUser = {
-              id: "admin-predefined",
-              email: PREDEFINED_ADMIN_EMAIL,
-              role: "admin",
-              name: "DROPOUT Administrator",
-            };
+          } catch (seedErr) {
+            console.warn("Could not auto-seed role in Supabase:", seedErr);
           }
         }
-      }
-    } else {
-      // Local / Offline fallback when Supabase keys are not set
-      const matchesPredefinedEmail = email === PREDEFINED_ADMIN_EMAIL || rawAccount.toLowerCase() === "admin";
-      const matchesPredefinedPassword = rawPassword === PREDEFINED_ADMIN_PASSWORD;
 
-      if (matchesPredefinedEmail && matchesPredefinedPassword) {
-        authenticatedUser = {
-          id: "admin-local",
-          email: PREDEFINED_ADMIN_EMAIL,
-          role: "admin",
-          name: "DROPOUT Administrator",
-        };
+        if (!authenticatedUser) {
+          authenticatedUser = {
+            id: `role-${matchedPredefined.role}`,
+            email: matchedPredefined.email,
+            role: matchedPredefined.role,
+            name: matchedPredefined.name,
+          };
+        }
       }
+    } else if (matchedPredefined && rawPassword === matchedPredefined.passwordDefault) {
+      // Local/Offline fallback
+      authenticatedUser = {
+        id: `local-${matchedPredefined.role}`,
+        email: matchedPredefined.email,
+        role: matchedPredefined.role,
+        name: matchedPredefined.name,
+      };
     }
 
     if (!authenticatedUser) {
       return NextResponse.json(
-        { error: "Invalid account or password. Please verify your credentials." },
+        { error: "Invalid username or password. Please verify your credentials." },
         { status: 401 }
       );
     }
@@ -124,8 +145,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       user: authenticatedUser,
+      role: authenticatedUser.role,
       session: authSession,
-      message: "Admin authorization successful",
+      message: `Authenticated as ${authenticatedUser.name}`,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal authentication error";

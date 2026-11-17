@@ -139,3 +139,5 @@ export interface StaffMember {
   status: "on_duty" | "off_duty";
   joinedDate: string;
 }
+
+export type AdminRole = "superadmin" | "kitchen" | null;

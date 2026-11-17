@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
 import {
   AddOnOption,
+  AdminRole,
   CartItem,
   Category,
   DietType,
@@ -86,10 +87,11 @@ interface RestaurantContextType {
   deleteStaff: (id: string) => void;
   toggleStaffDuty: (id: string) => void;
 
-  // Admin Auth
+  // Admin Auth & Role
   isAdminAuthenticated: boolean;
+  adminRole: AdminRole;
   adminLogin: (pin: string) => boolean;
-  adminLoginWithCredentials: (account: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  adminLoginWithCredentials: (account: string, password: string) => Promise<{ success: boolean; role?: AdminRole; error?: string }>;
   adminLogout: () => void;
 
   // Reset state
@@ -106,6 +108,7 @@ const LOCAL_STORAGE_KEYS = {
   TABLE_CAPACITIES: "dropout_pos_table_capacities",
   STAFF: "dropout_pos_staff",
   ADMIN_AUTH: "dropout_pos_admin_auth",
+  ADMIN_ROLE: "dropout_pos_admin_role",
   SELECTED_TABLE: "dropout_pos_selected_table",
 };
 
@@ -183,6 +186,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
   const [staff, setStaff] = useState<StaffMember[]>(INITIAL_STAFF);
   const [currentStaff, setCurrentStaff] = useState<StaffMember | null>(INITIAL_STAFF[0]);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
+  const [adminRole, setAdminRole] = useState<AdminRole>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Load state from localStorage on client mount
@@ -228,6 +232,11 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
 
       const storedAuth = localStorage.getItem(LOCAL_STORAGE_KEYS.ADMIN_AUTH);
       if (storedAuth !== null) setIsAdminAuthenticated(storedAuth === "true");
+
+      const storedRole = localStorage.getItem(LOCAL_STORAGE_KEYS.ADMIN_ROLE);
+      if (storedRole === "superadmin" || storedRole === "kitchen") {
+        setAdminRole(storedRole);
+      }
     } catch (e) {
       console.warn("Could not parse restaurant local storage:", e);
     } finally {
@@ -1174,17 +1183,36 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        const resolvedRole = (data?.role as AdminRole) || "superadmin";
         setIsAdminAuthenticated(true);
-        const manager = staff.find((s) => s.role === "Manager") || staff[0];
-        setCurrentStaff(manager);
+        setAdminRole(resolvedRole);
+
+        // Assign staff session representation
+        if (resolvedRole === "kitchen") {
+          const chef = staff.find((s) => s.role === "Head Chef") || {
+            id: "stf-kitchen",
+            name: "Kitchen Display Station",
+            role: "Head Chef" as const,
+            phone: "+91 96446 79988",
+            pin: "8082",
+            status: "on_duty" as const,
+            joinedDate: "2024-01-01",
+          };
+          setCurrentStaff(chef);
+        } else {
+          const manager = staff.find((s) => s.role === "Manager") || staff[0];
+          setCurrentStaff(manager);
+        }
+
         try {
           localStorage.setItem(LOCAL_STORAGE_KEYS.ADMIN_AUTH, "true");
+          localStorage.setItem(LOCAL_STORAGE_KEYS.ADMIN_ROLE, resolvedRole);
         } catch {
-          // ignore localStorage error
+          // ignore
         }
-        return { success: true };
+        return { success: true, role: resolvedRole };
       }
-      return { success: false, error: data?.error || "Invalid account or password." };
+      return { success: false, error: data?.error || "Invalid username or password." };
     } catch (err) {
       console.error("adminLoginWithCredentials error:", err);
       return { success: false, error: "Network error during authentication." };
@@ -1211,9 +1239,11 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
 
   const adminLogout = () => {
     setIsAdminAuthenticated(false);
+    setAdminRole(null);
     setCurrentStaff(null);
     try {
       localStorage.removeItem(LOCAL_STORAGE_KEYS.ADMIN_AUTH);
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.ADMIN_ROLE);
       const supabase = getSupabaseBrowserClient();
       if (supabase) {
         supabase.auth.signOut().catch(() => null);
@@ -1270,6 +1300,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
     setCart([]);
     setSelectedTableState(null);
     setIsAdminAuthenticated(false);
+    setAdminRole(null);
   };
 
   return (
@@ -1315,6 +1346,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
         deleteStaff,
         toggleStaffDuty,
         isAdminAuthenticated,
+        adminRole,
         adminLogin,
         adminLoginWithCredentials,
         adminLogout,

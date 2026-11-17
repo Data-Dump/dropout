@@ -11,14 +11,18 @@ import {
   LogIn,
   AlertCircle,
   ShieldCheck,
+  UtensilsCrossed,
   Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+type RoleOption = "SuperAdmin" | "Kitchen";
+
 export function AdminAuthGate({ children }: { children: React.ReactNode }) {
   const { isAdminAuthenticated, adminLoginWithCredentials } = useRestaurant();
-  const [account, setAccount] = useState("");
+  const [selectedRole, setSelectedRole] = useState<RoleOption>("SuperAdmin");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,8 +34,8 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!account.trim() || !password.trim()) {
-      setErrorMessage("Please enter both account and password.");
+    if (!password.trim()) {
+      setErrorMessage("Please enter the password for " + selectedRole + ".");
       return;
     }
 
@@ -39,13 +43,16 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
     setErrorMessage(null);
 
     try {
-      const result = await adminLoginWithCredentials(account.trim(), password.trim());
+      const result = await adminLoginWithCredentials(selectedRole, password.trim());
       if (result.success) {
-        toast.success("Welcome back! Admin portal unlocked.");
-        setAccount("");
+        if (result.role === "kitchen") {
+          toast.success("Kitchen station active. Orders section ready!");
+        } else {
+          toast.success("Welcome back, SuperAdmin! Full POS management unlocked.");
+        }
         setPassword("");
       } else {
-        setErrorMessage(result.error || "Invalid account or password. Please try again.");
+        setErrorMessage(result.error || `Invalid password for ${selectedRole}. Please try again.`);
         toast.error("Authentication failed");
       }
     } catch {
@@ -58,7 +65,7 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center p-4 sm:p-6 selection:bg-primary/20">
-      <div className="w-full max-w-md rounded-3xl border border-border/80 bg-card p-6 sm:p-10 shadow-xl space-y-6">
+      <div className="w-full max-w-md rounded-3xl border border-border/80 bg-card p-6 sm:p-9 shadow-xl space-y-6">
         {/* Header / Brand */}
         <div className="text-center space-y-3">
           <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-2xl overflow-hidden bg-white shadow-md border border-border/70 p-2">
@@ -81,7 +88,7 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
               Sign In to POS
             </h1>
             <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-              Enter your predefined credentials to access billing, live orders, kitchen display, and financial reports.
+              Select your role and enter your password to access the DROPOUT Cafe management system.
             </p>
           </div>
         </div>
@@ -99,35 +106,94 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
 
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-4">
-          {/* Account / Email Field */}
+          {/* Role / Username Selection Tabs */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-foreground uppercase tracking-wider block">
-              Account / Email
+              Select Username / Role
             </label>
-            <div className="relative">
-              <User className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                required
-                autoComplete="username"
-                placeholder="admin@dropoutcafe.in or admin"
-                value={account}
-                onChange={(e) => {
-                  setAccount(e.target.value);
+            <div className="grid grid-cols-2 gap-2.5">
+              {/* SuperAdmin Role Option */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedRole("SuperAdmin");
+                  setPassword("");
                   if (errorMessage) setErrorMessage(null);
                 }}
-                disabled={isLoading}
-                className="w-full rounded-xl border border-input bg-background pl-10 pr-4 py-2.5 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all disabled:opacity-50"
-                autoFocus
-              />
+                className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between space-y-1.5 ${
+                  selectedRole === "SuperAdmin"
+                    ? "border-primary bg-primary/10 ring-2 ring-primary/30 shadow-xs"
+                    : "border-border/80 bg-background hover:bg-muted/60"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className={`p-1.5 rounded-lg ${selectedRole === "SuperAdmin" ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}>
+                    <ShieldCheck className="h-4 w-4" />
+                  </div>
+                  {selectedRole === "SuperAdmin" && (
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                  )}
+                </div>
+                <div>
+                  <span className="font-black text-xs block text-foreground">
+                    SuperAdmin
+                  </span>
+                  <span className="text-[10px] text-muted-foreground block">
+                    Full POS Access
+                  </span>
+                </div>
+              </button>
+
+              {/* Kitchen Role Option */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedRole("Kitchen");
+                  setPassword("");
+                  if (errorMessage) setErrorMessage(null);
+                }}
+                className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between space-y-1.5 ${
+                  selectedRole === "Kitchen"
+                    ? "border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/30 shadow-xs"
+                    : "border-border/80 bg-background hover:bg-muted/60"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className={`p-1.5 rounded-lg ${selectedRole === "Kitchen" ? "bg-amber-500 text-white" : "bg-muted text-muted-foreground"}`}>
+                    <UtensilsCrossed className="h-4 w-4" />
+                  </div>
+                  {selectedRole === "Kitchen" && (
+                    <CheckCircle2 className="h-4 w-4 text-amber-600" />
+                  )}
+                </div>
+                <div>
+                  <span className="font-black text-xs block text-foreground">
+                    Kitchen
+                  </span>
+                  <span className="text-[10px] text-muted-foreground block">
+                    Orders Only
+                  </span>
+                </div>
+              </button>
             </div>
+          </div>
+
+          {/* Role Summary Note */}
+          <div className="rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <User className="h-3.5 w-3.5 text-primary" />
+              <span>Logging in as: <strong>{selectedRole}</strong></span>
+            </span>
+            <span className="text-[10px] font-semibold text-foreground/80">
+              {selectedRole === "Kitchen" ? "Orders View Only" : "All 10 Sections"}
+            </span>
           </div>
 
           {/* Password Field */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-foreground uppercase tracking-wider block">
-                Password
+                {selectedRole} Password
               </label>
             </div>
             <div className="relative">
@@ -136,7 +202,7 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
                 type={showPassword ? "text" : "password"}
                 required
                 autoComplete="current-password"
-                placeholder="Enter password"
+                placeholder={selectedRole === "SuperAdmin" ? "Enter SuperAdmin password" : "Enter Kitchen password"}
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
@@ -144,6 +210,7 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
                 }}
                 disabled={isLoading}
                 className="w-full rounded-xl border border-input bg-background pl-10 pr-10 py-2.5 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary transition-all disabled:opacity-50 font-mono"
+                autoFocus
               />
               <button
                 type="button"
@@ -165,7 +232,9 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full h-11 rounded-xl text-xs font-bold gap-2 mt-2 shadow-sm"
+            className={`w-full h-11 rounded-xl text-xs font-bold gap-2 mt-2 shadow-sm ${
+              selectedRole === "Kitchen" ? "bg-amber-600 hover:bg-amber-700 text-white" : ""
+            }`}
           >
             {isLoading ? (
               <>
@@ -175,7 +244,7 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
             ) : (
               <>
                 <LogIn className="h-4 w-4" />
-                <span>Sign In to Admin</span>
+                <span>Sign In as {selectedRole}</span>
               </>
             )}
           </Button>

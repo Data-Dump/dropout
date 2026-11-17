@@ -297,7 +297,7 @@ export default function TableLandingPage() {
 
       {/* Floating Bottom Cart Bar (Mobile) */}
       {cartCount > 0 && (
-        <div className="fixed bottom-4 left-3 right-3 z-40 max-w-lg mx-auto sm:hidden animate-in slide-in-from-bottom-3 duration-200">
+        <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-3 right-3 z-40 max-w-lg mx-auto sm:hidden animate-in slide-in-from-bottom-3 duration-200">
           <button
             onClick={() => setCartOpen(true)}
             className="w-full rounded-2xl bg-[#211D1A] text-[#FAF8F5] p-3 shadow-xl flex items-center justify-between active:scale-[0.98] transition-all border border-white/10"

@@ -61,7 +61,7 @@ export function TableManagementView({ onOpenQR }: TableManagementViewProps) {
       </div>
 
       {/* Tables Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
         {tables.map((tbl) => {
           const isOccupied = tbl.status === "occupied" || tbl.status === "needs_attention";
           const tableNum = tbl.tableNumber.replace("Table ", "");

@@ -129,7 +129,7 @@ export function LiveOrdersView() {
       {/* Header, Search & Quick Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Simple Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth touch-scroll pb-1 -mx-3.5 px-3.5 sm:mx-0 sm:px-0 shrink-0">
           <button
             onClick={() => setTabFilter("active")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
@@ -389,7 +389,7 @@ export function LiveOrdersView() {
                       {!isPaid && (
                         <button
                           onClick={() => handleMarkPaid(ord.id)}
-                          className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-all"
+                          className="w-full min-h-[44px] py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-all active:scale-[0.98]"
                         >
                           <CheckCircle2 className="h-4 w-4" />
                           <span>Mark as Paid ({formatCurrency(ord.total)})</span>
@@ -400,7 +400,7 @@ export function LiveOrdersView() {
                         {/* 1-Click Done / Served Button */}
                         <button
                           onClick={() => handleMarkCompleted(ord.id)}
-                          className="flex-1 py-2 rounded-xl bg-[#211D1A] hover:bg-stone-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-all"
+                          className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-[#211D1A] hover:bg-stone-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-all active:scale-[0.98]"
                         >
                           <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                           <span>Done & Served (Complete)</span>
@@ -409,7 +409,7 @@ export function LiveOrdersView() {
                         {/* Cancel Button */}
                         <button
                           onClick={() => handleCancelOrder(ord.id)}
-                          className="px-3 py-2 rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 font-bold text-xs flex items-center justify-center gap-1 transition-all"
+                          className="min-h-[44px] px-3.5 py-2 rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95"
                           title="Cancel Order"
                         >
                           <XCircle className="h-4 w-4" />
@@ -423,7 +423,7 @@ export function LiveOrdersView() {
                               toast.success(`Order ${ord.orderNumber} deleted.`);
                             }
                           }}
-                          className="px-2.5 py-2 rounded-xl border border-border text-muted-foreground hover:bg-destructive/10 hover:text-destructive font-bold text-xs flex items-center justify-center gap-1 transition-all"
+                          className="min-h-[44px] px-3 py-2 rounded-xl border border-border text-muted-foreground hover:bg-destructive/10 hover:text-destructive font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95"
                           title="Permanently Delete Order"
                         >
                           <Trash2 className="h-4 w-4" />

@@ -336,10 +336,102 @@ export function AdminLayout({ activeTab, onTabChange, children }: AdminLayoutPro
         </div>
 
         {/* Dynamic View Body */}
-        <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <div className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-8">
           {children}
         </div>
       </main>
+
+      {/* Mobile Bottom Navigation Bar (Fixed at bottom on phones for quick thumb access) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border/80 px-2 pt-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] shadow-lg flex items-center justify-around">
+        {adminRole === "kitchen" ? (
+          <>
+            <button
+              onClick={() => onTabChange("orders")}
+              className={`flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-xs font-bold transition-colors ${
+                activeTab === "orders" ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <div className="relative">
+                <BellRing className="h-5 w-5" />
+                {activeOrdersCount > 0 && (
+                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-primary text-white text-[9px] font-black">
+                    {activeOrdersCount}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] mt-0.5 font-black">Live Orders</span>
+            </button>
+
+            <button
+              onClick={() => {
+                adminLogout();
+                toast.info("Kitchen Session locked");
+              }}
+              className="flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="text-[10px] mt-0.5">Lock Session</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => onTabChange("orders")}
+              className={`flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-xs font-bold transition-colors ${
+                activeTab === "orders" ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <div className="relative">
+                <BellRing className="h-5 w-5" />
+                {activeOrdersCount > 0 && (
+                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full bg-primary text-white text-[9px] font-black">
+                    {activeOrdersCount}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] mt-0.5">Orders</span>
+            </button>
+
+            <button
+              onClick={() => onTabChange("tables")}
+              className={`flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-xs font-bold transition-colors ${
+                activeTab === "tables" ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <MapPin className="h-5 w-5" />
+              <span className="text-[10px] mt-0.5">Tables</span>
+            </button>
+
+            <button
+              onClick={() => onTabChange("overview")}
+              className={`flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-xs font-bold transition-colors ${
+                activeTab === "overview" ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <LayoutDashboard className="h-5 w-5" />
+              <span className="text-[10px] mt-0.5">Overview</span>
+            </button>
+
+            <button
+              onClick={() => onTabChange("payments")}
+              className={`flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-xs font-bold transition-colors ${
+                activeTab === "payments" ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <CreditCard className="h-5 w-5" />
+              <span className="text-[10px] mt-0.5">Payments</span>
+            </button>
+
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground"
+            >
+              <MenuIcon className="h-5 w-5" />
+              <span className="text-[10px] mt-0.5">More</span>
+            </button>
+          </>
+        )}
+      </nav>
 
       {/* QR Generator Dialog */}
       <QRGeneratorDialog

@@ -90,3 +90,22 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Mobile Safe Area & Touch Optimizations */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 1rem);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0.5rem);
+}
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Prevent unwanted zoom on focus in iOS Safari */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}

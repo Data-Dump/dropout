@@ -19,9 +19,9 @@ export function SettingsView() {
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   const handleReset = () => {
-    if (confirm("Reset demo data to initial mock orders, menu items, and tables?")) {
+    if (confirm("Clear local device cache and restore default settings?")) {
       resetToDefaults();
-      toast.success("Demo environment reset to factory defaults.");
+      toast.success("Local cache cleared and settings restored to defaults.");
     }
   };
 
@@ -189,14 +189,14 @@ export function SettingsView() {
         </button>
       </div>
 
-      {/* Danger Zone: Reset Demo Data */}
+      {/* Danger Zone: Reset Local Cache */}
       <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 sm:p-6 space-y-3">
         <div>
           <h4 className="text-sm font-black text-destructive">
-            Demo State Reset
+            Reset Local Device Cache
           </h4>
           <p className="text-xs text-muted-foreground">
-            Clear all browser localStorage modifications and restore initial mock orders, 10 tables, and default menu items.
+            Clear browser cached modifications and restore factory defaults for menu, table capacities, and staff duty statuses on this device.
           </p>
         </div>
 
@@ -206,7 +206,7 @@ export function SettingsView() {
           className="h-10 rounded-xl text-xs font-bold gap-2"
         >
           <RotateCcw className="h-4 w-4" />
-          <span>Reset All Demo State</span>
+          <span>Clear Local Cache & Reset</span>
         </Button>
       </div>
     </div>

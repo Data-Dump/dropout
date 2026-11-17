@@ -148,21 +148,6 @@ export default function OrderTrackingPage() {
     }
   }, [order, paymentSession, updatePaymentStatus]);
 
-  // Simulate test payment success (Sandbox / Development demo)
-  const handleSimulateTestPayment = async () => {
-    if (!order) return;
-    setIsVerifyingPayment(true);
-    try {
-      await updatePaymentStatus(order.id, "PAID");
-      setRemoteOrder((prev) => (prev ? { ...prev, paymentStatus: "PAID" } : prev));
-      toast.success("Test Payment Confirmed (Sandbox Demo)!");
-    } catch {
-      toast.error("Failed to update test payment");
-    } finally {
-      setIsVerifyingPayment(false);
-    }
-  };
-
   const handleShare = () => {
     if (navigator.share) {
       navigator
@@ -438,17 +423,6 @@ export default function OrderTrackingPage() {
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${isVerifyingPayment ? "animate-spin text-primary" : "text-muted-foreground"}`} />
                   <span>{isVerifyingPayment ? "Checking status..." : "Refresh Payment Status"}</span>
-                </button>
-
-                {/* Demo Payment Simulation Button */}
-                <button
-                  type="button"
-                  onClick={handleSimulateTestPayment}
-                  disabled={isVerifyingPayment}
-                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-50/80 hover:bg-emerald-100/80 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 text-xs font-bold transition-all"
-                >
-                  <CheckCircle className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Simulate Test UPI Payment (Demo)</span>
                 </button>
               </div>
             </div>

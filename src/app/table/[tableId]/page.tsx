@@ -90,10 +90,6 @@ export default function TableLandingPage() {
         return true;
       })
       .sort((a, b) => {
-        const aIsTest = a.price === 1 || a.name.includes("₹1") || a.tags?.includes("test");
-        const bIsTest = b.price === 1 || b.name.includes("₹1") || b.tags?.includes("test");
-        if (aIsTest && !bIsTest) return -1;
-        if (!aIsTest && bIsTest) return 1;
         return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
       });
   }, [menuItems, selectedCategory, selectedDiet, searchQuery]);

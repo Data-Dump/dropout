@@ -248,16 +248,16 @@ export default function KitchenPage() {
               )}
             </button>
 
-            {/* Test Audio Chime */}
+            {/* Kitchen Audio Chime Sound Check */}
             <button
               onClick={handleTestChime}
               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-colors ${
                 isDarkTheme ? "bg-stone-900 border-stone-800 text-stone-300 hover:bg-stone-800" : "bg-card border-border text-foreground hover:bg-muted"
               }`}
-              title="Test Kitchen Audio Chime"
+              title="Sound Check: Verify Kitchen Speaker"
             >
               <BellRing className="h-3.5 w-3.5 text-amber-500" />
-              <span className="hidden md:inline">Test</span>
+              <span className="hidden md:inline">Sound Check</span>
             </button>
 
             {/* Fullscreen Mode */}

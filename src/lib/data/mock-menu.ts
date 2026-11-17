@@ -7,7 +7,7 @@ export const CAFE_DETAILS = {
   gstRate: 0, // 0% GST (Removed)
   address: "Near College Gate, Main Campus Road",
   city: "Pune, Maharashtra",
-  phone: "+91 98230 45678",
+  phone: "+91 96446 79988",
   instagram: "@dropoutcafe.in",
   openingHours: "9:00 AM – 11:30 PM",
 };

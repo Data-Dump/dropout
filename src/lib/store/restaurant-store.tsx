@@ -91,7 +91,7 @@ interface RestaurantContextType {
   adminLogin: (pin: string) => boolean;
   adminLogout: () => void;
 
-  // Reset demo
+  // Reset state
   resetToDefaults: () => void;
 }
 
@@ -169,19 +169,19 @@ const DEFAULT_CAPACITIES: Record<string, number> = {
   "Table 10": 8,
 };
 
-// Production: start with no demo orders — real orders come from Supabase
-const INITIAL_DEMO_ORDERS: Order[] = [];
+// Production: orders start empty and synchronize live with Supabase
+const INITIAL_EMPTY_ORDERS: Order[] = [];
 
 export function RestaurantProvider({ children }: { children: React.ReactNode }) {
   const [selectedTable, setSelectedTableState] = useState<TableNumber | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [orders, setOrders] = useState<Order[]>(INITIAL_DEMO_ORDERS);
+  const [orders, setOrders] = useState<Order[]>(INITIAL_EMPTY_ORDERS);
   const [menuItems, setMenuItems] = useState<MenuItem[]>(MOCK_MENU_ITEMS);
   const [categories, setCategories] = useState<Category[]>(MOCK_CATEGORIES);
   const [tableCapacities, setTableCapacities] = useState<Record<string, number>>(DEFAULT_CAPACITIES);
   const [staff, setStaff] = useState<StaffMember[]>(INITIAL_STAFF);
   const [currentStaff, setCurrentStaff] = useState<StaffMember | null>(INITIAL_STAFF[0]);
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(true); // default true for smooth demoing, toggleable
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Load state from localStorage on client mount
@@ -1227,14 +1227,14 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
 
   const resetToDefaults = () => {
     localStorage.clear();
-    setOrders(INITIAL_DEMO_ORDERS);
+    setOrders(INITIAL_EMPTY_ORDERS);
     setMenuItems(MOCK_MENU_ITEMS);
     setCategories(MOCK_CATEGORIES);
     setTableCapacities(DEFAULT_CAPACITIES);
     setStaff(INITIAL_STAFF);
     setCart([]);
     setSelectedTableState(null);
-    setIsAdminAuthenticated(true);
+    setIsAdminAuthenticated(false);
   };
 
   return (

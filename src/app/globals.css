@@ -2,26 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* DROPOUT Cafe & Restro Theme: Warm Linen & Espresso Aesthetic */
+    --background: 40 20% 98%;          /* #FAF8F5 warm linen / parchment */
+    --foreground: 24 10% 12%;          /* #211D1A dark espresso */
+
+    --card: 0 0% 100%;                 /* #FFFFFF crisp card surface */
+    --card-foreground: 24 10% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 24 10% 12%;
+
+    /* Terracotta Amber brand accent */
+    --primary: 20 68% 46%;             /* #C35B29 artisan roasted amber / terracotta */
+    --primary-foreground: 40 20% 98%;
+
+    --secondary: 40 15% 94%;           /* #F2EFE9 soft warm beige */
+    --secondary-foreground: 24 10% 20%;
+
+    --muted: 40 12% 93%;               /* #ECE9E2 muted background */
+    --muted-foreground: 25 5% 45%;     /* #75716B subdued text */
+
+    --accent: 35 45% 92%;              /* warm tinted hover */
+    --accent-foreground: 24 10% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 35 15% 88%;              /* #E4DFD8 delicate warm hairline border */
+    --input: 35 15% 88%;
+    --ring: 20 68% 46%;
+
+    --radius: 0.75rem;
+
+    /* Custom Indian cafe tags */
+    --veg: 142 76% 36%;                /* Pure emerald green */
+    --non-veg: 0 72% 51%;              /* Crisp warm red */
+  }
+
+  .dark {
+    --background: 24 10% 8%;           /* #161412 deep espresso night */
+    --foreground: 40 15% 94%;          /* #F2EFE9 off-white text */
+
+    --card: 24 10% 12%;                /* #211D1A dark card */
+    --card-foreground: 40 15% 94%;
+
+    --popover: 24 10% 12%;
+    --popover-foreground: 40 15% 94%;
+
+    --primary: 20 75% 52%;             /* vibrant warm amber */
+    --primary-foreground: 24 10% 8%;
+
+    --secondary: 24 8% 18%;
+    --secondary-foreground: 40 15% 94%;
+
+    --muted: 24 8% 18%;
+    --muted-foreground: 30 6% 62%;
+
+    --accent: 24 8% 22%;
+    --accent-foreground: 40 15% 94%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 24 8% 22%;
+    --input: 24 8% 22%;
+    --ring: 20 75% 52%;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+/* Custom scrollbar for horizontal category pills */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

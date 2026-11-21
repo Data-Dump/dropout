@@ -20,7 +20,11 @@ import {
   Layers,
   Sparkles,
   Trash2,
+  Bell,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
+import { unlockAudioContext, playNewOrderChime } from "@/lib/audio";
 import { toast } from "sonner";
 
 function getComboBreakdown(
@@ -71,6 +75,13 @@ export function LiveOrdersView() {
   } = useRestaurant();
   const [tabFilter, setTabFilter] = useState<"active" | "completed" | "all">("active");
   const [searchQuery, setSearchQuery] = useState("");
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  const handleTestSound = () => {
+    unlockAudioContext();
+    playNewOrderChime();
+    toast.success("🔔 Kitchen bell chime tested! Audio alerts are loud & active.");
+  };
 
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
@@ -168,8 +179,43 @@ export function LiveOrdersView() {
           </button>
         </div>
 
-        {/* Search & Empty Orders */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        {/* Search, Audio Controls & Empty Orders */}
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+          {/* Audio Chime Indicator & Test Button */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => {
+                const next = !soundEnabled;
+                setSoundEnabled(next);
+                if (next) {
+                  unlockAudioContext();
+                  playNewOrderChime();
+                  toast.success("🔔 Order chime enabled");
+                } else {
+                  toast.info("Audio chime muted");
+                }
+              }}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
+                soundEnabled
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  : "border-border bg-secondary text-muted-foreground"
+              }`}
+              title={soundEnabled ? "Mute audio chimes" : "Enable audio chimes"}
+            >
+              {soundEnabled ? <Volume2 className="h-3.5 w-3.5 text-emerald-600" /> : <VolumeX className="h-3.5 w-3.5" />}
+              <span>{soundEnabled ? "Chime ON" : "Muted"}</span>
+            </button>
+
+            <button
+              onClick={handleTestSound}
+              className="px-2.5 py-1.5 rounded-xl border border-border bg-card hover:bg-secondary text-xs font-bold text-foreground transition-all flex items-center gap-1 shrink-0 active:scale-95"
+              title="Test Kitchen Audio Chime"
+            >
+              <Bell className="h-3.5 w-3.5 text-primary" />
+              <span className="hidden sm:inline">Test Bell</span>
+            </button>
+          </div>
+
           {orders.length > 0 && (
             <button
               onClick={async () => {
@@ -182,11 +228,11 @@ export function LiveOrdersView() {
               title="Delete all orders and empty queue"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              <span>Empty All Orders</span>
+              <span className="hidden sm:inline">Empty Queue</span>
             </button>
           )}
 
-          <div className="relative w-full sm:w-64">
+          <div className="relative w-full sm:w-56">
             <Search className="absolute left-3.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <input
               type="text"
@@ -225,30 +271,40 @@ export function LiveOrdersView() {
               Math.floor((Date.now() - new Date(ord.createdAt).getTime()) / (1000 * 60))
             );
 
+            const isNew = st === "NEW";
+
             return (
               <div
                 key={ord.id}
-                className={`rounded-2xl border bg-card p-4 sm:p-5 shadow-xs flex flex-col justify-between transition-all ${
-                  st === "COMPLETED"
-                    ? "border-border/60 opacity-80"
+                className={`rounded-2xl border p-4 sm:p-5 shadow-xs flex flex-col justify-between transition-all ${
+                  isNew
+                    ? "border-amber-400 bg-amber-500/5 ring-2 ring-amber-400/40 shadow-sm"
+                    : st === "COMPLETED"
+                    ? "border-border/60 bg-card opacity-80"
                     : st === "CANCELLED"
-                    ? "border-rose-200 opacity-60"
+                    ? "border-rose-200 bg-card opacity-60"
                     : isPaid
-                    ? "border-emerald-200/80 shadow-xs"
-                    : "border-border/80"
+                    ? "border-emerald-200/80 bg-card shadow-xs"
+                    : "border-border/80 bg-card"
                 }`}
               >
                 <div>
                   {/* Card Header: Table Number & Order Number */}
                   <div className="flex items-start justify-between gap-2 border-b border-border/60 pb-3">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-2xl font-black text-foreground tracking-tight">
                           {ord.tableNumber}
                         </span>
                         <Badge variant="stone" className="font-mono text-xs font-bold">
                           {ord.orderNumber}
                         </Badge>
+                        {isNew && (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white font-black text-[10px] uppercase tracking-wider animate-pulse flex items-center gap-1 shadow-2xs">
+                            <Sparkles className="h-2.5 w-2.5" />
+                            <span>NEW</span>
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                         <Clock className="h-3 w-3" />

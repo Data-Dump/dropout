@@ -16,6 +16,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { unlockAudioContext, playNewOrderChime } from "@/lib/audio";
 import { toast } from "sonner";
 
 type RoleOption = "SuperAdmin" | "Kitchen";
@@ -45,8 +46,10 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
     try {
       const result = await adminLoginWithCredentials(selectedRole, password.trim());
       if (result.success) {
+        unlockAudioContext();
         if (result.role === "kitchen") {
-          toast.success("Kitchen station active. Orders section ready!");
+          playNewOrderChime();
+          toast.success("Kitchen station active. Audio chime enabled!");
         } else {
           toast.success("Welcome back, SuperAdmin! Full POS management unlocked.");
         }

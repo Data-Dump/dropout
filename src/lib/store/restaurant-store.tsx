@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useState, useMemo, useRef } from "react";
 import {
   AddOnOption,
   AdminRole,
@@ -19,6 +19,8 @@ import {
 import { DROPOUT_TABLES, TableNumber, paiseToRupees, rupeesToPaise, normalizeOrderStatus, normalizePaymentStatus } from "@/lib/utils";
 import { CAFE_DETAILS, MOCK_CATEGORIES, MOCK_MENU_ITEMS } from "@/lib/data/mock-menu";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { playNewOrderChime } from "@/lib/audio";
+import { toast } from "sonner";
 
 interface PlaceOrderParams {
   tableNumber: TableNumber;
@@ -190,6 +192,8 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
   const [adminRole, setAdminRole] = useState<AdminRole>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+  const knownOrderIdsRef = useRef<Set<string>>(new Set());
+  const isInitialOrderSyncRef = useRef<boolean>(true);
 
   // Load state from localStorage on client mount
   useEffect(() => {
@@ -385,22 +389,55 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
       }
     };
 
-    const syncOrders = async () => {
+    const syncOrders = async (isBackgroundPoll = false) => {
       try {
         const ordersRes = await fetch("/api/orders");
         if (ordersRes.ok) {
           const ordersJson = await ordersRes.json();
           if (isMounted && Array.isArray(ordersJson?.orders)) {
-            setOrders(ordersJson.orders);
+            const fetchedOrders: Order[] = ordersJson.orders;
+
+            // Detect new orders that arrived after initial load
+            if (!isInitialOrderSyncRef.current) {
+              const newlyArrived = fetchedOrders.filter(
+                (o) =>
+                  !knownOrderIdsRef.current.has(o.id) &&
+                  (normalizeOrderStatus(o.status) === "NEW" || normalizeOrderStatus(o.status) === "ACCEPTED")
+              );
+
+              if (newlyArrived.length > 0) {
+                // Play melodic harmonic restaurant chime
+                playNewOrderChime();
+
+                const firstOrder = newlyArrived[0];
+                const itemsSummary = firstOrder.items
+                  .map((i) => `${i.quantity}x ${i.name}`)
+                  .slice(0, 2)
+                  .join(", ");
+
+                toast.info(`🔔 New Order from ${firstOrder.tableNumber}! (${firstOrder.orderNumber})`, {
+                  description: `${itemsSummary}${firstOrder.items.length > 2 ? " + more" : ""} • ₹${firstOrder.total}`,
+                  duration: 6000,
+                });
+              }
+            }
+
+            // Update known orders set
+            knownOrderIdsRef.current = new Set(fetchedOrders.map((o) => o.id));
+            isInitialOrderSyncRef.current = false;
+
+            setOrders(fetchedOrders);
             try {
-              localStorage.setItem(LOCAL_STORAGE_KEYS.ORDERS, JSON.stringify(ordersJson.orders));
+              localStorage.setItem(LOCAL_STORAGE_KEYS.ORDERS, JSON.stringify(fetchedOrders));
             } catch {
               // ignore
             }
           }
         }
       } catch (err) {
-        console.warn("Orders sync skipped:", err);
+        if (!isBackgroundPoll) {
+          console.warn("Orders sync skipped:", err);
+        }
       }
     };
 
@@ -408,6 +445,22 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
     syncCategories();
     syncMenuItems();
     syncOrders();
+
+    // 1. High-frequency background polling every 2.5 seconds
+    // Guarantees orders pop up automatically in kitchen without needing website refresh
+    const pollingTimer = setInterval(() => {
+      syncOrders(true);
+    }, 2500);
+
+    // 2. Immediate sync on window focus and tab visibility change
+    const handleVisibilitySync = () => {
+      if (document.visibilityState === "visible") {
+        syncOrders(true);
+      }
+    };
+
+    window.addEventListener("focus", handleVisibilitySync);
+    document.addEventListener("visibilitychange", handleVisibilitySync);
 
     // Set up Supabase Realtime channel across all menu & order tables
     const realtimeChannel = supabase
@@ -451,6 +504,9 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
 
     return () => {
       isMounted = false;
+      clearInterval(pollingTimer);
+      window.removeEventListener("focus", handleVisibilitySync);
+      document.removeEventListener("visibilitychange", handleVisibilitySync);
       supabase.removeChannel(realtimeChannel);
     };
   }, []);
@@ -809,6 +865,8 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
   };
 
   const clearAllOrders = async (): Promise<void> => {
+    knownOrderIdsRef.current = new Set();
+    isInitialOrderSyncRef.current = false;
     setOrders([]);
     try {
       localStorage.removeItem(LOCAL_STORAGE_KEYS.ORDERS);

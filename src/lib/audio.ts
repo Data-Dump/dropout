@@ -25,51 +25,80 @@ function getAudioContext(): AudioContext | null {
 }
 
 /**
- * Play a cheerful two-tone pleasant kitchen chime for incoming orders
- * Notes: D5 (587.33 Hz) -> A5 (880.00 Hz)
+ * Play a cheerful, rich harmonic bell chime for incoming orders
+ * Notes: F5 (698.25 Hz) -> A5 (880.00 Hz) -> C6 (1046.50 Hz)
  */
 export function playNewOrderChime(): void {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
 
+    if (ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+
     const now = ctx.currentTime;
 
-    // First Tone: 587.33 Hz (D5)
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
+    const notes = [
+      { freq: 698.25, time: 0.0, dur: 0.55, gain: 0.35 },    // F5
+      { freq: 880.0, time: 0.15, dur: 0.65, gain: 0.4 },     // A5
+      { freq: 1046.5, time: 0.3, dur: 0.95, gain: 0.45 },    // C6 (bright bell finish)
+    ];
 
-    osc1.type = "sine";
-    osc1.frequency.setValueAtTime(587.33, now);
+    notes.forEach(({ freq, time, dur, gain }) => {
+      const startTime = now + time;
 
-    gain1.gain.setValueAtTime(0, now);
-    gain1.gain.linearRampToValueAtTime(0.3, now + 0.04);
-    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
+      // Primary sine wave for sweet warmth
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
 
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, startTime);
 
-    osc1.start(now);
-    osc1.stop(now + 0.6);
+      // Bell envelope: sharp attack, smooth exponential decay
+      gainNode.gain.setValueAtTime(0, startTime);
+      gainNode.gain.linearRampToValueAtTime(gain, startTime + 0.025);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + dur);
 
-    // Second Tone: 880.00 Hz (A5) slightly delayed
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
 
-    osc2.type = "sine";
-    osc2.frequency.setValueAtTime(880.0, now + 0.16);
+      osc.start(startTime);
+      osc.stop(startTime + dur + 0.05);
 
-    gain2.gain.setValueAtTime(0, now + 0.16);
-    gain2.gain.linearRampToValueAtTime(0.35, now + 0.2);
-    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.85);
+      // Overtone for crisp acoustic bell resonance
+      const overtone = ctx.createOscillator();
+      const overGain = ctx.createGain();
 
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
+      overtone.type = "triangle";
+      overtone.frequency.setValueAtTime(freq * 2, startTime);
 
-    osc2.start(now + 0.16);
-    osc2.stop(now + 0.9);
+      overGain.gain.setValueAtTime(0, startTime);
+      overGain.gain.linearRampToValueAtTime(gain * 0.25, startTime + 0.02);
+      overGain.gain.exponentialRampToValueAtTime(0.0001, startTime + dur * 0.4);
+
+      overtone.connect(overGain);
+      overGain.connect(ctx.destination);
+
+      overtone.start(startTime);
+      overtone.stop(startTime + dur * 0.5);
+    });
   } catch (err) {
     console.warn("Unable to play audio chime:", err);
+  }
+}
+
+/**
+ * Unlocks the browser AudioContext on user interaction
+ */
+export function unlockAudioContext(): void {
+  try {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+  } catch {
+    // ignore
   }
 }
 

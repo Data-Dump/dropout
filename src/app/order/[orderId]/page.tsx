@@ -358,9 +358,13 @@ export default function OrderTrackingPage() {
                   </div>
                 </div>
               ) : (
-                <div className="w-44 h-44 flex flex-col items-center justify-center rounded-2xl bg-secondary/50 border animate-pulse text-xs text-muted-foreground">
-                  <RefreshCw className="h-5 w-5 animate-spin mb-1 text-primary" />
-                  <span>Loading QR Code...</span>
+                <div className="w-full sm:w-52 p-4 flex flex-col items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-300 dark:border-amber-700/60 text-center text-xs space-y-2 shrink-0">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                    PhonePe Gateway Offline
+                  </span>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Online UPI payment is currently unavailable. Please show <strong>Token #{order.orderNumber}</strong> at the counter to settle your bill.
+                  </p>
                 </div>
               )}
 

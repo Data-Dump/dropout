@@ -15,14 +15,21 @@ interface CreatePaymentRequestBody {
   idempotencyKey?: string;
 }
 
+const PHONEPE_ONLINE_AVAILABLE = process.env.ENABLE_PHONEPE_ONLINE === "true"; // PhonePe online marked as currently unavailable
+
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as CreatePaymentRequestBody;
 
-    if (!body || !body.orderId) {
+    // Check if PhonePe online is available
+    if (!PHONEPE_ONLINE_AVAILABLE) {
       return NextResponse.json(
-        { error: "orderId is required to initiate payment." },
-        { status: 400 }
+        {
+          success: false,
+          error: "PhonePe online payment is currently unavailable. Please choose Pay at Counter.",
+          unavailable: true,
+        },
+        { status: 503 }
       );
     }
 

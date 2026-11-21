@@ -143,27 +143,27 @@ export function SettingsView() {
               UPI Gateway Integration (PhonePe UPIPay)
             </h4>
           </div>
-          <Badge variant="amber" className="font-bold text-[10px]">
-            UAT Sandbox Ready
+          <Badge variant="stone" className="font-bold text-[10px] bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60">
+            Currently Unavailable
           </Badge>
         </div>
 
         <div className="space-y-2 text-xs">
           <p className="text-muted-foreground leading-relaxed">
-            Integrated following the <strong>UPIPay</strong> architecture. When live PhonePe Merchant credentials are provided in <code className="bg-muted px-1.5 py-0.5 rounded text-foreground">.env.local</code>, standard checksum verification and S2S webhook callbacks activate automatically.
+            PhonePe online checkout is currently marked <strong>Unavailable</strong>. All dining orders are currently directed to <strong>Pay at Counter</strong>.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <div className="p-3 rounded-xl bg-secondary/40 border border-border/50">
               <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">
-                Provider
+                Online Gateway Status
               </span>
-              <span className="font-bold text-foreground">PhonePe Standard PG</span>
+              <span className="font-bold text-amber-700 dark:text-amber-400">Temporarily Offline</span>
             </div>
             <div className="p-3 rounded-xl bg-secondary/40 border border-border/50">
               <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">
-                Callback Webhook Route
+                Active Order Mode
               </span>
-              <span className="font-mono text-[11px] text-primary font-bold">/api/payments/phonepe/callback</span>
+              <span className="font-bold text-foreground">Pay at Counter (Dining Token)</span>
             </div>
           </div>
         </div>

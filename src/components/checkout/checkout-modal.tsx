@@ -213,7 +213,7 @@ export function CheckoutModal({ open, onOpenChange }: CheckoutModalProps) {
               Choose Payment Option
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {/* Pay at Counter */}
+              {/* Pay at Counter (Active / Recommended) */}
               <button
                 type="button"
                 onClick={() => setPaymentMethod("counter")}
@@ -233,31 +233,30 @@ export function CheckoutModal({ open, onOpenChange }: CheckoutModalProps) {
                   )}
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Get a Token number. Confirm or pay at counter to begin cooking.
+                  Get a Token number. Confirm or pay at counter (Cash/Card/UPI) to begin cooking.
                 </p>
               </button>
 
-              {/* UPI Online via PhonePe */}
+              {/* UPI Online via PhonePe (Currently Unavailable) */}
               <button
                 type="button"
-                onClick={() => setPaymentMethod("upi_online")}
-                className={`flex flex-col p-3.5 rounded-xl border text-left transition-all relative ${
-                  paymentMethod === "upi_online"
-                    ? "border-primary bg-primary/5 ring-1 ring-primary shadow-xs"
-                    : "border-border/80 bg-card hover:bg-muted/40"
-                }`}
+                onClick={() => {
+                  toast.info("PhonePe online payment is currently unavailable. Please select Pay at Counter.");
+                }}
+                className="flex flex-col p-3.5 rounded-xl border border-dashed border-border/80 bg-muted/40 text-left transition-all relative cursor-not-allowed opacity-75 hover:bg-muted/60"
+                title="PhonePe online payment is currently unavailable"
               >
                 <div className="flex items-center justify-between w-full mb-1">
                   <div className="flex items-center gap-1.5">
-                    <QrCode className="h-4 w-4 text-primary" />
-                    <span className="font-bold text-xs sm:text-sm text-foreground">Instant UPI</span>
+                    <QrCode className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-bold text-xs sm:text-sm text-muted-foreground">Instant UPI (PhonePe)</span>
                   </div>
-                  {paymentMethod === "upi_online" && (
-                    <CheckCircle2 className="h-4 w-4 text-primary" />
-                  )}
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60">
+                    Currently Unavailable
+                  </span>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Scan PhonePe / GPay QR for immediate preparation.
+                  PhonePe gateway is temporarily unavailable. Please choose Pay at Counter.
                 </p>
               </button>
             </div>

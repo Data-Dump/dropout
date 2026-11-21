@@ -24,7 +24,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { unlockAudioContext, playNewOrderChime } from "@/lib/audio";
+import { unlockAudioContext, playNewOrderChime, stopNewOrderChime } from "@/lib/audio";
 import { toast } from "sonner";
 
 function getComboBreakdown(
@@ -76,11 +76,22 @@ export function LiveOrdersView() {
   const [tabFilter, setTabFilter] = useState<"active" | "completed" | "all">("active");
   const [searchQuery, setSearchQuery] = useState("");
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isRinging, setIsRinging] = useState(false);
 
   const handleTestSound = () => {
     unlockAudioContext();
+    setIsRinging(true);
     playNewOrderChime();
-    toast.success("🔔 Kitchen bell chime tested! Audio alerts are loud & active.");
+    toast.success("🔔 10-second loud kitchen chime playing. Tap 'Silence' to stop early.");
+    setTimeout(() => {
+      setIsRinging(false);
+    }, 10500);
+  };
+
+  const handleSilence = () => {
+    stopNewOrderChime();
+    setIsRinging(false);
+    toast.info("Audio alert silenced");
   };
 
   const filteredOrders = useMemo(() => {
@@ -119,17 +130,23 @@ export function LiveOrdersView() {
   }, [orders]);
 
   const handleMarkCompleted = (orderId: string) => {
+    stopNewOrderChime();
+    setIsRinging(false);
     updateOrderStatus(orderId, "COMPLETED");
     toast.success("Order cleared & marked Completed");
   };
 
   const handleMarkPaid = (orderId: string) => {
+    stopNewOrderChime();
+    setIsRinging(false);
     updatePaymentStatus(orderId, "PAID");
     toast.success("Payment marked as PAID at Counter");
   };
 
   const handleCancelOrder = (orderId: string) => {
     if (confirm("Are you sure you want to cancel this order?")) {
+      stopNewOrderChime();
+      setIsRinging(false);
       updateOrderStatus(orderId, "CANCELLED");
       toast.info("Order marked as Cancelled");
     }
@@ -183,37 +200,54 @@ export function LiveOrdersView() {
         <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
           {/* Audio Chime Indicator & Test Button */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={() => {
-                const next = !soundEnabled;
-                setSoundEnabled(next);
-                if (next) {
-                  unlockAudioContext();
-                  playNewOrderChime();
-                  toast.success("🔔 Order chime enabled");
-                } else {
-                  toast.info("Audio chime muted");
-                }
-              }}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
-                soundEnabled
-                  ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
-                  : "border-border bg-secondary text-muted-foreground"
-              }`}
-              title={soundEnabled ? "Mute audio chimes" : "Enable audio chimes"}
-            >
-              {soundEnabled ? <Volume2 className="h-3.5 w-3.5 text-emerald-600" /> : <VolumeX className="h-3.5 w-3.5" />}
-              <span>{soundEnabled ? "Chime ON" : "Muted"}</span>
-            </button>
+            {isRinging ? (
+              <button
+                onClick={handleSilence}
+                className="px-3 py-1.5 rounded-xl border border-rose-500 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black transition-all flex items-center gap-1.5 animate-pulse shadow-md active:scale-95"
+                title="Silence active 10s kitchen alarm"
+              >
+                <VolumeX className="h-3.5 w-3.5" />
+                <span>Silence Bell (10s)</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  const next = !soundEnabled;
+                  setSoundEnabled(next);
+                  if (next) {
+                    unlockAudioContext();
+                    setIsRinging(true);
+                    playNewOrderChime();
+                    setTimeout(() => setIsRinging(false), 10500);
+                    toast.success("🔔 10s Order chime enabled");
+                  } else {
+                    stopNewOrderChime();
+                    setIsRinging(false);
+                    toast.info("Audio chime muted");
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  soundEnabled
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                    : "border-border bg-secondary text-muted-foreground"
+                }`}
+                title={soundEnabled ? "Mute audio chimes" : "Enable audio chimes"}
+              >
+                {soundEnabled ? <Volume2 className="h-3.5 w-3.5 text-emerald-600" /> : <VolumeX className="h-3.5 w-3.5" />}
+                <span>{soundEnabled ? "10s Chime ON" : "Muted"}</span>
+              </button>
+            )}
 
-            <button
-              onClick={handleTestSound}
-              className="px-2.5 py-1.5 rounded-xl border border-border bg-card hover:bg-secondary text-xs font-bold text-foreground transition-all flex items-center gap-1 shrink-0 active:scale-95"
-              title="Test Kitchen Audio Chime"
-            >
-              <Bell className="h-3.5 w-3.5 text-primary" />
-              <span className="hidden sm:inline">Test Bell</span>
-            </button>
+            {!isRinging && (
+              <button
+                onClick={handleTestSound}
+                className="px-2.5 py-1.5 rounded-xl border border-border bg-card hover:bg-secondary text-xs font-bold text-foreground transition-all flex items-center gap-1 shrink-0 active:scale-95"
+                title="Test 10-Second Loud Kitchen Chime"
+              >
+                <Bell className="h-3.5 w-3.5 text-primary" />
+                <span className="hidden sm:inline">Test Bell (10s)</span>
+              </button>
+            )}
           </div>
 
           {orders.length > 0 && (

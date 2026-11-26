@@ -21,7 +21,10 @@ export const metadata: Metadata = {
     "Restaurant POS",
     "Specialty Coffee",
     "Woodfired Pizza",
-    "Pune Cafe",
+    "Jaipur Cafe",
+    "Rajasthan Cafe",
+    "Mahapura Cafe",
+    "JKLU Cafe",
   ],
   authors: [{ name: "DROPOUT Cafe & Restro" }],
   icons: {

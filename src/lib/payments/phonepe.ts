@@ -164,7 +164,7 @@ export async function createPhonePePaymentSession(
 
   // Generate NPCI-compliant QR code and UPI intent links via UPIPay QR generator
   const amountRupees = paiseToRupees(params.amountPaise);
-  const cafeVpa = (process.env.CAFE_UPI_VPA || process.env.PHONEPE_VPA || "9644679988@ybl").trim();
+  const cafeVpa = (process.env.CAFE_UPI_VPA || process.env.PHONEPE_VPA || "8387898080@ybl").trim();
 
   const qrResponse = await generateUPIQR({
     vpa: cafeVpa,

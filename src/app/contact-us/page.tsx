@@ -82,7 +82,7 @@ export default function ContactUsPage() {
                 </p>
                 <p className="text-muted-foreground">{CAFE_DETAILS.city}</p>
                 <span className="text-[11px] text-primary font-semibold block pt-1">
-                  Landmark: 2 mins walking from College Main Gate
+                  Landmark: Near J.K. Lakshmipat University & Mahindra SEZ
                 </span>
               </div>
             </div>
@@ -92,16 +92,29 @@ export default function ContactUsPage() {
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Phone className="h-4 w-4" />
               </div>
-              <div className="space-y-0.5">
-                <span className="font-bold text-foreground block">Phone Support</span>
-                <a
-                  href={`tel:${CAFE_DETAILS.phone.replace(/[^0-9+]/g, "")}`}
-                  className="text-muted-foreground hover:text-primary font-semibold transition-colors block"
-                >
-                  {CAFE_DETAILS.phone}
-                </a>
+              <div className="space-y-1">
+                <span className="font-bold text-foreground block">Phone Support & Call Desk</span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2.5">
+                  <a
+                    href={`tel:${CAFE_DETAILS.phone.replace(/[^0-9+]/g, "")}`}
+                    className="text-primary hover:underline font-bold transition-colors"
+                  >
+                    {CAFE_DETAILS.phone}
+                  </a>
+                  {CAFE_DETAILS.secondaryPhone && (
+                    <>
+                      <span className="hidden sm:inline text-muted-foreground">•</span>
+                      <a
+                        href={`tel:${CAFE_DETAILS.secondaryPhone.replace(/[^0-9+]/g, "")}`}
+                        className="text-foreground hover:text-primary font-bold transition-colors"
+                      >
+                        {CAFE_DETAILS.secondaryPhone}
+                      </a>
+                    </>
+                  )}
+                </div>
                 <span className="text-[11px] text-muted-foreground block">
-                  Available for reservations, group bookings & quick queries
+                  Available for orders, reservations, group bookings & quick queries
                 </span>
               </div>
             </div>

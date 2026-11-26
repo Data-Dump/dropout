@@ -152,14 +152,24 @@ export function Footer() {
                   {CAFE_DETAILS.address}, {CAFE_DETAILS.city}
                 </span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <Phone className="h-4 w-4 text-primary shrink-0" />
-                <a
-                  href={`tel:${CAFE_DETAILS.phone.replace(/[^0-9+]/g, "")}`}
-                  className="hover:text-primary transition-colors"
-                >
-                  {CAFE_DETAILS.phone}
-                </a>
+              <div className="flex items-start gap-2.5">
+                <Phone className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <div className="flex flex-col gap-0.5">
+                  <a
+                    href={`tel:${CAFE_DETAILS.phone.replace(/[^0-9+]/g, "")}`}
+                    className="hover:text-primary transition-colors"
+                  >
+                    {CAFE_DETAILS.phone}
+                  </a>
+                  {CAFE_DETAILS.secondaryPhone && (
+                    <a
+                      href={`tel:${CAFE_DETAILS.secondaryPhone.replace(/[^0-9+]/g, "")}`}
+                      className="hover:text-primary transition-colors text-stone-400"
+                    >
+                      {CAFE_DETAILS.secondaryPhone}
+                    </a>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 text-primary shrink-0" />

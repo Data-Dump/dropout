@@ -1284,7 +1284,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
             id: "stf-kitchen",
             name: "Kitchen Display Station",
             role: "Head Chef" as const,
-            phone: "+91 96446 79988",
+            phone: "+91 83878 98080",
             pin: "8082",
             status: "on_duty" as const,
             joinedDate: "2024-01-01",

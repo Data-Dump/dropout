@@ -5,9 +5,10 @@ export const CAFE_DETAILS = {
   tagline: "Brews, Bites & College Memories",
   currency: "₹",
   gstRate: 0, // 0% GST (Removed)
-  address: "Near College Gate, Main Campus Road",
-  city: "Pune, Maharashtra",
-  phone: "+91 96446 79988",
+  address: "Near J.K. Lakshmipat University, Mahapura Rd, near Mahindra Sez, Mahapura",
+  city: "Rajasthan 302026",
+  phone: "+91 83878 98080",
+  secondaryPhone: "+91 90013 34005",
   instagram: "@dropoutcafe.in",
   openingHours: "9:00 AM – 11:30 PM",
 };

@@ -15,7 +15,7 @@ import {
 export const metadata: Metadata = {
   title: "About Us | DROPOUT Cafe & Restro",
   description:
-    "Learn about DROPOUT Cafe & Restro — handcrafted coffees, comfort bites, and college memories near College Gate, Pune.",
+    "Learn about DROPOUT Cafe & Restro — handcrafted coffees, comfort bites, and college memories near J.K. Lakshmipat University, Mahapura, Rajasthan.",
 };
 
 export default function AboutUsPage() {
@@ -32,7 +32,7 @@ export default function AboutUsPage() {
           <span>Brews, Bites & College Memories</span>
         </h2>
         <p className="text-muted-foreground leading-relaxed">
-          Welcome to <strong className="text-foreground">DROPOUT Cafe & Restro</strong>. Situated right next to the college campus, DROPOUT was born out of a simple, rebellious belief: the most brilliant ideas, lasting friendships, and greatest memories are not formed inside lecture halls, but around a table with steaming cups of coffee and plates of hot comfort food.
+          Welcome to <strong className="text-foreground">DROPOUT Cafe & Restro</strong>. Situated near J.K. Lakshmipat University on Mahapura Road (near Mahindra SEZ), DROPOUT was born out of a simple, rebellious belief: the most brilliant ideas, lasting friendships, and greatest memories are not formed inside lecture halls, but around a table with steaming cups of coffee and plates of hot comfort food.
         </p>
         <p className="text-muted-foreground leading-relaxed">
           Whether you are catching up between lectures, finishing a deadline, celebrating with friends, or enjoying a quiet moment of caffeine solitude, DROPOUT is your cozy home away from home.

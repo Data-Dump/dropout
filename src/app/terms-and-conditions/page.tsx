@@ -137,7 +137,7 @@ export default function TermsAndConditionsPage() {
           8. Governing Law & Jurisdiction
         </h2>
         <p className="text-muted-foreground text-xs sm:text-sm">
-          These Terms and Conditions are governed by and construed in accordance with the laws of the Republic of India. Any disputes or claims arising out of or relating to these Terms shall be subject to the exclusive jurisdiction of the competent courts in <strong className="text-foreground">Pune, Maharashtra</strong>.
+          These Terms and Conditions are governed by and construed in accordance with the laws of the Republic of India. Any disputes or claims arising out of or relating to these Terms shall be subject to the exclusive jurisdiction of the competent courts in <strong className="text-foreground">Jaipur, Rajasthan</strong>.
         </p>
       </section>
 

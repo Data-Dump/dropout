@@ -124,3 +124,99 @@ export function isDirectBrowserDocumentRequest(req: NextRequest): boolean {
   }
   return false;
 }
+
+export function directBrowserBlockedResponse(): NextResponse {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Access Restricted | DROPOUT Cafe &amp; Restro</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: #FAF8F5;
+      color: #211D1A;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .card {
+      width: 100%;
+      max-width: 400px;
+      background: #FFFFFF;
+      border: 1px solid #E4DFD8;
+      border-radius: 20px;
+      padding: 32px 28px;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(33, 29, 26, 0.06);
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: rgba(195, 91, 41, 0.12);
+      color: #C35B29;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    p {
+      font-size: 14px;
+      line-height: 1.55;
+      color: #75716B;
+      margin-bottom: 24px;
+    }
+    a.btn {
+      display: inline-block;
+      width: 100%;
+      padding: 12px 20px;
+      border-radius: 12px;
+      background: #C35B29;
+      color: #FAF8F5;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      transition: opacity 0.15s ease;
+    }
+    a.btn:hover { opacity: 0.92; }
+    .brand {
+      margin-top: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #A09A92;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <span class="badge">403 · Protected Endpoint</span>
+    <h1>Access Restricted</h1>
+    <p>This endpoint is reserved for DROPOUT Cafe &amp; Restro&apos;s internal POS system and cannot be opened directly.</p>
+    <a class="btn" href="/">Back to Menu</a>
+    <div class="brand">DROPOUT Cafe &amp; Restro</div>
+  </main>
+</body>
+</html>`;
+
+  return new NextResponse(html, {
+    status: 403,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+}

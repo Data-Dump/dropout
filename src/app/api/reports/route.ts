@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getStaffSessionFromRequest, isDirectBrowserDocumentRequest } from "@/lib/auth/staff-session";
+import {
+  getStaffSessionFromRequest,
+  isDirectBrowserDocumentRequest,
+  directBrowserBlockedResponse,
+} from "@/lib/auth/staff-session";
 import { paiseToRupees, normalizeOrderStatus, normalizePaymentStatus } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -64,7 +68,7 @@ export interface SalesReportResponse {
 export async function GET(req: NextRequest) {
   try {
     if (isDirectBrowserDocumentRequest(req)) {
-      return NextResponse.json({ error: "Direct browser access is disabled" }, { status: 403 });
+      return directBrowserBlockedResponse();
     }
 
     const session = getStaffSessionFromRequest(req);

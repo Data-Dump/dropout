@@ -51,7 +51,7 @@ export default function HomePage() {
   }, [categories]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-24 sm:pb-8 overflow-x-hidden">
+    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       <Navbar onOpenCart={() => setCartOpen(true)} />
 
       {/* Search + Category bar */}

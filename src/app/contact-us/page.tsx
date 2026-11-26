@@ -129,6 +129,20 @@ export default function ContactUsPage() {
           )}
         </div>
       </div>
+
+      {/* Google Maps */}
+      <div className="mt-2 rounded-2xl overflow-hidden border border-border/80 w-full h-64 sm:h-80">
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3560.1220003704257!2d75.64910187552056!3d26.836071676693056!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396c4be554c0accf%3A0x1c6f3a404567d1f8!2sDropout%20cafe!5e0!3m2!1sen!2sin!4v1795724522145!5m2!1sen!2sin"
+          width="100%"
+          height="100%"
+          style={{ border: 0, display: "block" }}
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="strict-origin-when-cross-origin"
+          title="DROPOUT Cafe & Restro on Google Maps"
+        />
+      </div>
     </PolicyLayout>
   );
 }

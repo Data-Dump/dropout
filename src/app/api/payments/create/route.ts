@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createPhonePePaymentSession } from "@/lib/payments/phonepe";
 import { paiseToRupees } from "@/lib/utils";
+import { safeServerError } from "@/lib/security/sanitize";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -156,8 +157,7 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Failed to initiate payment session";
     console.error("Create Payment API Error:", err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: safeServerError(err, "Failed to initiate payment session") }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getUPIPayClient } from "@/lib/payments/phonepe";
 import { paiseToRupees } from "@/lib/utils";
+import { safeServerError } from "@/lib/security/sanitize";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -175,8 +176,7 @@ export async function GET(req: NextRequest) {
       });
     }
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Verification route failure";
     console.error("Payment Verification Error:", err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: safeServerError(err, "Verification route failure") }, { status: 500 });
   }
 }

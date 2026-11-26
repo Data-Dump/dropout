@@ -4,6 +4,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@supabase/supabase-js";
 import { attachStaffSessionCookie, createStaffSessionToken } from "@/lib/auth/staff-session";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { safeServerError } from "@/lib/security/sanitize";
 
 export const dynamic = "force-dynamic";
 
@@ -173,8 +174,7 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Internal authentication error";
     console.error("Admin Login API Error:", err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: safeServerError(err, "Authentication failed") }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@ import {
   isDirectBrowserDocumentRequest,
   directBrowserBlockedResponse,
 } from "@/lib/auth/staff-session";
+import { safeServerError } from "@/lib/security/sanitize";
 import { paiseToRupees, normalizeOrderStatus, normalizePaymentStatus } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -357,8 +358,7 @@ export async function GET(req: NextRequest) {
       source: "store_fallback",
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Internal server error";
     console.error("Reports API error:", err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: safeServerError(err) }, { status: 500 });
   }
 }

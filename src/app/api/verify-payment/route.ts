@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyRazorpaySignature } from "@/lib/payments/razorpay";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { safeServerError } from "@/lib/security/sanitize";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +15,15 @@ interface VerifyPaymentRequest {
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(`verify-payment:${ip}`, 30, 5 * 60 * 1000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { success: false, error: "Too many verification requests. Please wait a moment." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+      );
+    }
+
     const body = (await req.json()) as VerifyPaymentRequest;
 
     const {
@@ -89,13 +100,11 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: unknown) {
     console.error("Error verifying Razorpay payment:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Failed to verify payment";
 
     return NextResponse.json(
       {
         success: false,
-        error: errorMessage,
+        error: safeServerError(error, "Failed to verify payment"),
       },
       { status: 500 }
     );

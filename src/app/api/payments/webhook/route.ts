@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getUPIPayClient } from "@/lib/payments/phonepe";
+import { safeServerError } from "@/lib/security/sanitize";
 
 /**
  * PhonePe Server-to-Server Webhook Handler
@@ -157,8 +158,7 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Webhook processing failed";
     console.error("PhonePe Webhook Route Error:", err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: safeServerError(err, "Webhook processing failed") }, { status: 500 });
   }
 }

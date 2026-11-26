@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getRazorpayClient } from "@/lib/payments/razorpay";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { safeServerError } from "@/lib/security/sanitize";
 
 export const dynamic = "force-dynamic";
 
@@ -125,16 +126,16 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     console.error("Error creating Razorpay order:", error);
 
-    const errorMessage =
-      error instanceof Error ? error.message : "Failed to create Razorpay order";
-
     // Handle authentication error code specifically if present
     const statusCode =
       (error as { statusCode?: number })?.statusCode === 401 ? 401 : 500;
 
     return NextResponse.json(
       {
-        error: errorMessage,
+        error:
+          statusCode === 401
+            ? "Razorpay authentication failed. Please check server credentials."
+            : safeServerError(error, "Failed to create Razorpay order"),
       },
       { status: statusCode }
     );

@@ -5,6 +5,7 @@ import {
   isDirectBrowserDocumentRequest,
   directBrowserBlockedResponse,
 } from "@/lib/auth/staff-session";
+import { safeServerError } from "@/lib/security/sanitize";
 import { normalizePaymentStatus, paiseToRupees, TableNumber } from "@/lib/utils";
 import { PaymentMethod, PaymentStatus } from "@/types";
 
@@ -143,7 +144,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ payments: formatted });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Failed to fetch payments history";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Payments API Error:", err);
+    return NextResponse.json({ error: safeServerError(err, "Failed to fetch payments history") }, { status: 500 });
   }
 }

@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-import {
-  getStaffSessionFromRequest,
-  isDirectBrowserDocumentRequest,
-  directBrowserBlockedResponse,
-} from "@/lib/auth/staff-session";
+import { getStaffSessionFromRequest, isDirectBrowserDocumentRequest, directBrowserBlockedResponse } from "@/lib/auth/staff-session";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { sanitizeText, sanitizePhone, safeServerError } from "@/lib/security/sanitize";
 import {
   DROPOUT_TABLES,
   normalizeTableNumber,
@@ -121,9 +118,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Mandatory customer name & 10-digit phone verification
-    const trimmedName = (body.customerName || "").trim();
-    const cleanPhone = (body.customerPhone || "").replace(/\D/g, "");
+    // 2. Mandatory customer name & 10-digit phone verification (sanitized)
+    const trimmedName = sanitizeText(body.customerName, 80);
+    const cleanPhone = sanitizePhone(body.customerPhone);
+    const sanitizedNotes = sanitizeText(body.notes, 300);
 
     if (!trimmedName) {
       return NextResponse.json(
@@ -421,7 +419,7 @@ export async function POST(req: NextRequest) {
         dietType,
         selectedVariant: resolvedVariant || undefined,
         selectedAddOns: uiAddons.length > 0 ? uiAddons : undefined,
-        specialInstructions: rawItem.specialInstructions?.trim() || undefined,
+        specialInstructions: sanitizeText(rawItem.specialInstructions, 200) || undefined,
         isCombo,
         comboIncludes,
       });
@@ -436,7 +434,7 @@ export async function POST(req: NextRequest) {
         diet_type: dietType,
         selected_variant: resolvedVariant,
         selected_addons: formattedAddons,
-        special_instructions: rawItem.specialInstructions?.trim() || null,
+        special_instructions: sanitizeText(rawItem.specialInstructions, 200) || null,
         total_price_paise: itemTotalPaise,
       });
     }
@@ -470,9 +468,9 @@ export async function POST(req: NextRequest) {
             p_subtotal_paise: subtotalPaise,
             p_tax_paise: taxPaise,
             p_total_paise: totalPaise,
-            p_customer_name: body.customerName?.trim() || null,
-            p_customer_phone: body.customerPhone?.trim() || null,
-            p_notes: body.notes?.trim() || null,
+            p_customer_name: trimmedName || null,
+            p_customer_phone: cleanPhone || null,
+            p_notes: sanitizedNotes || null,
             p_idempotency_key: idempotencyKey || null,
             p_items: dbOrderItemsToInsert,
             p_order_status: "NEW",
@@ -515,9 +513,9 @@ export async function POST(req: NextRequest) {
               subtotal_paise: subtotalPaise,
               tax_paise: taxPaise,
               total_paise: totalPaise,
-              customer_name: body.customerName?.trim() || null,
-              customer_phone: body.customerPhone?.trim() || null,
-              notes: body.notes?.trim() || null,
+              customer_name: trimmedName || null,
+              customer_phone: cleanPhone || null,
+              notes: sanitizedNotes || null,
               idempotency_key: idempotencyKey || null,
             })
             .select("id, created_at, updated_at")
@@ -540,9 +538,9 @@ export async function POST(req: NextRequest) {
                 subtotal_paise: subtotalPaise,
                 tax_paise: taxPaise,
                 total_paise: totalPaise,
-                customer_name: body.customerName?.trim() || null,
-                customer_phone: body.customerPhone?.trim() || null,
-                notes: body.notes?.trim() || null,
+                customer_name: trimmedName || null,
+                customer_phone: cleanPhone || null,
+                notes: sanitizedNotes || null,
               })
               .select("id, created_at, updated_at")
               .single();
@@ -604,9 +602,9 @@ export async function POST(req: NextRequest) {
       status: "NEW",
       paymentMethod,
       paymentStatus: "PENDING",
-      customerName: body.customerName?.trim() || undefined,
-      customerPhone: body.customerPhone?.trim() || undefined,
-      notes: body.notes?.trim() || undefined,
+      customerName: trimmedName || undefined,
+      customerPhone: cleanPhone || undefined,
+      notes: sanitizedNotes || undefined,
       idempotencyKey: idempotencyKey || undefined,
       createdAt: nowIso,
       updatedAt: nowIso,
@@ -624,9 +622,8 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Internal server error";
     console.error("Orders API error:", err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: safeServerError(err) }, { status: 500 });
   }
 }
 
@@ -726,8 +723,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ orders: formattedOrders });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Orders API error:", err);
+    return NextResponse.json({ error: safeServerError(err) }, { status: 500 });
   }
 }
 
@@ -785,8 +782,8 @@ export async function PATCH(req: NextRequest) {
       order: data || { id: orderId, ...updates },
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Orders API error:", err);
+    return NextResponse.json({ error: safeServerError(err) }, { status: 500 });
   }
 }
 
@@ -846,7 +843,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ error: "Missing orderId or all=true parameter" }, { status: 400 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Orders API error:", err);
+    return NextResponse.json({ error: safeServerError(err) }, { status: 500 });
   }
 }

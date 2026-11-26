@@ -232,10 +232,10 @@ export default function OrderTrackingPage() {
   const isCounter = order.paymentMethod === "counter";
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-16">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      <main className="container max-w-lg mx-auto px-4 py-6 sm:py-8 space-y-5">
+      <main className="container max-w-lg mx-auto px-4 py-6 sm:py-8 space-y-5 flex-1">
         {/* Navigation Bar */}
         <div className="flex items-center justify-between">
           <Link

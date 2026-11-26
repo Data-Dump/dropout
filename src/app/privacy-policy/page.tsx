@@ -126,7 +126,7 @@ export default function PrivacyPolicyPage() {
           <p className="text-muted-foreground">
             Email: <a href="mailto:support@dropoutcafe.in" className="text-primary hover:underline">support@dropoutcafe.in</a>
           </p>
-          <p className="text-muted-foreground">Phone: {CAFE_DETAILS.phone}</p>
+          <p className="text-muted-foreground">Phone: +91 83878 98080 / +91 90013 34005</p>
         </div>
       </section>
     </PolicyLayout>

@@ -121,7 +121,7 @@ export default function RefundAndCancellationPolicyPage() {
           <p className="font-bold text-foreground">Customer Support Desk — {CAFE_DETAILS.name}</p>
           <p className="text-muted-foreground">Location: {CAFE_DETAILS.address}, {CAFE_DETAILS.city}</p>
           <p className="text-muted-foreground">
-            Phone / WhatsApp: <a href={`tel:${CAFE_DETAILS.phone.replace(/[^0-9+]/g, "")}`} className="text-primary hover:underline">{CAFE_DETAILS.phone}</a>
+            Phone: <a href="tel:+918387898080" className="text-primary hover:underline">+91 83878 98080</a> / <a href="tel:+919001334005" className="text-primary hover:underline">+91 90013 34005</a>
           </p>
           <p className="text-muted-foreground">
             Email: <a href="mailto:support@dropoutcafe.in" className="text-primary hover:underline">support@dropoutcafe.in</a>

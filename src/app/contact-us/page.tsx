@@ -93,28 +93,24 @@ export default function ContactUsPage() {
                 <Phone className="h-4 w-4" />
               </div>
               <div className="space-y-1">
-                <span className="font-bold text-foreground block">Phone Support & Call Desk</span>
+                <span className="font-bold text-foreground block">Phone</span>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2.5">
                   <a
-                    href={`tel:${CAFE_DETAILS.phone.replace(/[^0-9+]/g, "")}`}
+                    href="tel:+918387898080"
                     className="text-primary hover:underline font-bold transition-colors"
                   >
-                    {CAFE_DETAILS.phone}
+                    +91 83878 98080
                   </a>
-                  {CAFE_DETAILS.secondaryPhone && (
-                    <>
-                      <span className="hidden sm:inline text-muted-foreground">•</span>
-                      <a
-                        href={`tel:${CAFE_DETAILS.secondaryPhone.replace(/[^0-9+]/g, "")}`}
-                        className="text-foreground hover:text-primary font-bold transition-colors"
-                      >
-                        {CAFE_DETAILS.secondaryPhone}
-                      </a>
-                    </>
-                  )}
+                  <span className="hidden sm:inline text-muted-foreground">•</span>
+                  <a
+                    href="tel:+919001334005"
+                    className="text-primary hover:underline font-bold transition-colors"
+                  >
+                    +91 90013 34005
+                  </a>
                 </div>
                 <span className="text-[11px] text-muted-foreground block">
-                  Available for orders, reservations, group bookings & quick queries
+                  Available for orders, reservations & inquiries
                 </span>
               </div>
             </div>

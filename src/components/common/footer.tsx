@@ -156,19 +156,17 @@ export function Footer() {
                 <Phone className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 <div className="flex flex-col gap-0.5">
                   <a
-                    href={`tel:${CAFE_DETAILS.phone.replace(/[^0-9+]/g, "")}`}
+                    href="tel:+918387898080"
                     className="hover:text-primary transition-colors"
                   >
-                    {CAFE_DETAILS.phone}
+                    +91 83878 98080
                   </a>
-                  {CAFE_DETAILS.secondaryPhone && (
-                    <a
-                      href={`tel:${CAFE_DETAILS.secondaryPhone.replace(/[^0-9+]/g, "")}`}
-                      className="hover:text-primary transition-colors text-stone-400"
-                    >
-                      {CAFE_DETAILS.secondaryPhone}
-                    </a>
-                  )}
+                  <a
+                    href="tel:+919001334005"
+                    className="hover:text-primary transition-colors text-stone-300"
+                  >
+                    +91 90013 34005
+                  </a>
                 </div>
               </div>
               <div className="flex items-center gap-2.5">

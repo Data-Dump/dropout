@@ -7,8 +7,8 @@ export const CAFE_DETAILS = {
   gstRate: 0, // 0% GST (Removed)
   address: "Near J.K. Lakshmipat University, Mahapura Rd, near Mahindra Sez, Mahapura",
   city: "Rajasthan 302026",
-  phone: "+91 83878 98080",
-  secondaryPhone: "+91 90013 34005",
+  phones: ["+91 83878 98080", "+91 90013 34005"],
+  phone: "+91 83878 98080, +91 90013 34005",
   instagram: "@dropoutcafe.in",
   openingHours: "9:00 AM – 11:30 PM",
 };

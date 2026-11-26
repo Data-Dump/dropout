@@ -50,6 +50,18 @@ export default function HomePage() {
     return [...categories].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
   }, [categories]);
 
+  const groupedSections = useMemo(() => {
+    if (selectedCategory !== "all" || searchQuery.trim()) {
+      return null;
+    }
+    return sortedCategories
+      .map((cat) => ({
+        category: cat,
+        items: filteredItems.filter((item) => item.categoryId === cat.id),
+      }))
+      .filter((sec) => sec.items.length > 0);
+  }, [sortedCategories, filteredItems, selectedCategory, searchQuery]);
+
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       <Navbar onOpenCart={() => setCartOpen(true)} />
@@ -142,6 +154,30 @@ export default function HomePage() {
             >
               Reset filters
             </button>
+          </div>
+        ) : groupedSections ? (
+          <div className="space-y-8">
+            {groupedSections.map(({ category, items }) => (
+              <section key={category.id} className="space-y-3.5">
+                <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                  <h2 className="text-base sm:text-lg font-black text-foreground tracking-tight">
+                    {category.name}
+                  </h2>
+                  <span className="text-[11px] font-bold text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                    {items.length}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
+                  {items.map((item) => (
+                    <MenuItemCard
+                      key={item.id}
+                      item={item}
+                      onOpenDetails={(i) => { setActiveItem(i); setItemModalOpen(true); }}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">

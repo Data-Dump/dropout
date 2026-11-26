@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { MenuItem } from "@/types";
 import { formatCurrency } from "@/lib/utils";
@@ -16,6 +16,8 @@ interface MenuItemCardProps {
 
 export function MenuItemCard({ item, onOpenDetails }: MenuItemCardProps) {
   const { cart, addToCart, updateQuantity } = useRestaurant();
+  const [imgError, setImgError] = useState(false);
+  const imageSrc = imgError || !item.imageUrl ? "/logo.png" : item.imageUrl;
 
   // Find all cart entries for this menuItem
   const cartEntries = cart.filter((c) => c.menuItem.id === item.id);
@@ -125,12 +127,13 @@ export function MenuItemCard({ item, onOpenDetails }: MenuItemCardProps) {
         <div className="relative shrink-0 flex flex-col items-center">
           <div className="relative h-24 w-24 rounded-2xl overflow-hidden bg-muted/40 shadow-xs border border-border/60">
             <Image
-              src={item.imageUrl}
+              src={imageSrc}
               alt={item.name}
               fill
               sizes="96px"
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
+              onError={() => setImgError(true)}
             />
             {/* Sold Out Overlay */}
             {!item.isAvailable && (
@@ -189,15 +192,16 @@ export function MenuItemCard({ item, onOpenDetails }: MenuItemCardProps) {
       {/* ---------------- DESKTOP VIEW (>= sm): Vertical Card Layout ---------------- */}
       <div className="hidden sm:flex flex-col justify-between h-full">
         <div>
-          {/* Food Photography & Badges */}
-          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted/40 mb-3">
+          {/* Food Photography & Badges (1:1 Square) */}
+          <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-muted/40 mb-3">
             <Image
-              src={item.imageUrl}
+              src={imageSrc}
               alt={item.name}
               fill
               sizes="(max-width: 1024px) 50vw, 33vw"
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
+              onError={() => setImgError(true)}
             />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-70" />

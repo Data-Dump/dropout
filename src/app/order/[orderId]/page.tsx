@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRestaurant } from "@/lib/store/restaurant-store";
 import { Navbar } from "@/components/common/navbar";
+import { Footer } from "@/components/common/footer";
 import { DietBadge } from "@/components/ui/diet-badge";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, normalizePaymentStatus } from "@/lib/utils";
@@ -516,6 +517,8 @@ export default function OrderTrackingPage() {
           </Link>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }

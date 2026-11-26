@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import { Navbar } from "@/components/common/navbar";
+import { Footer } from "@/components/common/footer";
 import { MenuItemCard } from "@/components/menu/menu-item-card";
 import { MenuItemModal } from "@/components/menu/menu-item-modal";
 import { CartDrawer } from "@/components/menu/cart-drawer";
@@ -286,6 +287,9 @@ export default function HomePage() {
           </div>
         )}
       </main>
+
+      {/* Website Footer with Brand, Quick Links & Policy Compliance */}
+      <Footer />
 
       {/* Floating Bottom Cart Bar (Mobile First) */}
       {cartCount > 0 && (

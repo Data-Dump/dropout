@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { normalizeTableNumber, formatCurrency } from "@/lib/utils";
 import { useRestaurant } from "@/lib/store/restaurant-store";
 import { Navbar } from "@/components/common/navbar";
+import { Footer } from "@/components/common/footer";
 import { MenuItemCard } from "@/components/menu/menu-item-card";
 import { MenuItemModal } from "@/components/menu/menu-item-modal";
 import { CartDrawer } from "@/components/menu/cart-drawer";
@@ -294,6 +295,9 @@ export default function TableLandingPage() {
           </div>
         )}
       </main>
+
+      {/* Website Footer with Brand, Quick Links & Policy Compliance */}
+      <Footer />
 
       {/* Floating Bottom Cart Bar (Mobile) */}
       {cartCount > 0 && (

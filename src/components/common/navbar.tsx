@@ -61,12 +61,12 @@ export function Navbar({ onOpenCart }: NavbarProps) {
             </button>
           </div>
 
-          {/* Center Navigation — Menu only (Admin hidden from customer view) */}
-          <nav className="flex items-center gap-1 sm:gap-2">
+          {/* Center Navigation */}
+          <nav className="flex items-center gap-1 sm:gap-1.5">
             <Link
               href="/"
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors",
+                "flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors",
                 isMenu
                   ? "bg-secondary text-foreground font-semibold"
                   : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
@@ -74,6 +74,30 @@ export function Navbar({ onOpenCart }: NavbarProps) {
             >
               <Coffee className="h-4 w-4" />
               <span>Menu</span>
+            </Link>
+
+            <Link
+              href="/about-us"
+              className={cn(
+                "hidden sm:flex items-center px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors",
+                pathname === "/about-us"
+                  ? "bg-secondary text-foreground font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
+              )}
+            >
+              <span>About</span>
+            </Link>
+
+            <Link
+              href="/contact-us"
+              className={cn(
+                "hidden sm:flex items-center px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors",
+                pathname === "/contact-us"
+                  ? "bg-secondary text-foreground font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
+              )}
+            >
+              <span>Contact</span>
             </Link>
           </nav>
 

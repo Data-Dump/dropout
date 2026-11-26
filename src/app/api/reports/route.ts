@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getStaffSessionFromRequest } from "@/lib/auth/staff-session";
 import { paiseToRupees, normalizeOrderStatus, normalizePaymentStatus } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +63,14 @@ export interface SalesReportResponse {
 
 export async function GET(req: NextRequest) {
   try {
+    const session = getStaffSessionFromRequest(req);
+    if (!session) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+    if (session.role !== "superadmin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const url = new URL(req.url);
     const timeframe = url.searchParams.get("timeframe") || "today"; // "today" | "week" | "month" | "custom"
     const customStart = url.searchParams.get("startDate");

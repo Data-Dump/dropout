@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRazorpayClient } from "@/lib/payments/razorpay";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +16,41 @@ interface CreateOrderRequest {
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(`create-order:${ip}`, 20, 5 * 60 * 1000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many payment requests. Please wait a moment and try again." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+      );
+    }
+
     const body = (await req.json()) as CreateOrderRequest;
 
     // Amount can be provided as amount (in paise) or amountPaise
     const rawAmount = body.amount !== undefined ? body.amount : body.amountPaise;
-    const amount = Number(rawAmount);
+    let amount = Number(rawAmount);
+
+    // Server-authoritative amount verification against Supabase order if orderId is provided
+    const supabaseAdmin = getSupabaseAdminClient();
+    if (body.orderId && supabaseAdmin) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.orderId);
+      const { data: existingOrder } = await supabaseAdmin
+        .from("orders")
+        .select("total_paise, payment_status")
+        .eq(isUuid ? "id" : "order_number", body.orderId)
+        .maybeSingle();
+
+      if (existingOrder) {
+        if (String(existingOrder.payment_status || "").toUpperCase() === "PAID") {
+          return NextResponse.json(
+            { error: "Order has already been paid." },
+            { status: 400 }
+          );
+        }
+        amount = Number(existingOrder.total_paise);
+      }
+    }
 
     // Minimum amount check: 100 paise (₹1.00)
     if (!amount || isNaN(amount) || amount < 100) {
@@ -66,21 +97,18 @@ export async function POST(req: NextRequest) {
     const razorpayOrder = await razorpay.orders.create(options);
 
     // If orderId is provided, optionally link or log in Supabase
-    if (body.orderId) {
-      const supabaseAdmin = getSupabaseAdminClient();
-      if (supabaseAdmin) {
-        try {
-          await supabaseAdmin.from("payments").insert({
-            order_id: body.orderId,
-            amount_paise: Math.round(amount),
-            currency,
-            status: "PENDING",
-            provider: "razorpay",
-            merchant_transaction_id: razorpayOrder.id,
-          });
-        } catch (dbErr) {
-          console.warn("Could not log Razorpay order to Supabase payments table:", dbErr);
-        }
+    if (body.orderId && supabaseAdmin) {
+      try {
+        await supabaseAdmin.from("payments").insert({
+          order_id: body.orderId,
+          amount_paise: Math.round(amount),
+          currency,
+          status: "PENDING",
+          provider: "razorpay",
+          merchant_transaction_id: razorpayOrder.id,
+        });
+      } catch (dbErr) {
+        console.warn("Could not log Razorpay order to Supabase payments table:", dbErr);
       }
     }
 

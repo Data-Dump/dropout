@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Navbar } from "@/components/common/navbar";
+import { AdminAuthGate } from "@/components/admin/admin-auth-gate";
 import { OrderTicketCard } from "@/components/kitchen/order-ticket-card";
 import { useRestaurant } from "@/lib/store/restaurant-store";
 import { OrderStatus } from "@/types";
@@ -153,6 +154,7 @@ export default function KitchenPage() {
   };
 
   return (
+    <AdminAuthGate>
     <div
       className={`min-h-screen flex flex-col transition-colors duration-200 ${
         isDarkTheme ? "bg-[#0F0D0B] text-stone-100" : "bg-[#FAF8F5] text-stone-900"
@@ -405,5 +407,6 @@ export default function KitchenPage() {
         )}
       </main>
     </div>
+    </AdminAuthGate>
   );
 }

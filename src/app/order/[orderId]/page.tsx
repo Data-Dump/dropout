@@ -60,7 +60,7 @@ export default function OrderTrackingPage() {
     let isMounted = true;
 
     if (!storeOrder && orderId) {
-      fetch("/api/orders")
+      fetch(`/api/orders?orderId=${encodeURIComponent(orderId)}`)
         .then((res) => res.json())
         .then((data) => {
           if (!isMounted) return;

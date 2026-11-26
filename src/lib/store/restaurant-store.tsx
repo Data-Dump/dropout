@@ -391,7 +391,29 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
 
     const syncOrders = async (isBackgroundPoll = false) => {
       try {
+        const isStaffRoute =
+          typeof window !== "undefined" &&
+          (window.location.pathname.startsWith("/kitchen") ||
+            window.location.pathname.startsWith("/admin"));
+
+        if (!isStaffRoute) {
+          return;
+        }
+
         const ordersRes = await fetch("/api/orders");
+        if (ordersRes.status === 401) {
+          if (isMounted) {
+            setIsAdminAuthenticated(false);
+            setAdminRole(null);
+            try {
+              localStorage.removeItem(LOCAL_STORAGE_KEYS.ADMIN_AUTH);
+              localStorage.removeItem(LOCAL_STORAGE_KEYS.ADMIN_ROLE);
+            } catch {
+              // ignore
+            }
+          }
+          return;
+        }
         if (ordersRes.ok) {
           const ordersJson = await ordersRes.json();
           if (isMounted && Array.isArray(ordersJson?.orders)) {
@@ -1310,15 +1332,8 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
     }
   };
 
-  // Quick PIN clearance (for reports elevation)
+  // Quick PIN clearance (staff PIN only; master login uses /api/admin/login)
   const adminLogin = (pin: string) => {
-    const masterPin = process.env.NEXT_PUBLIC_ADMIN_PIN || "1234";
-    if (pin === masterPin) {
-      setIsAdminAuthenticated(true);
-      const manager = staff.find((s) => s.role === "Manager") || staff[0];
-      setCurrentStaff(manager);
-      return true;
-    }
     const matchingStaff = staff.find((s) => s.pin === pin);
     if (matchingStaff) {
       setIsAdminAuthenticated(true);
@@ -1335,6 +1350,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
     try {
       localStorage.removeItem(LOCAL_STORAGE_KEYS.ADMIN_AUTH);
       localStorage.removeItem(LOCAL_STORAGE_KEYS.ADMIN_ROLE);
+      fetch("/api/admin/logout", { method: "POST" }).catch(() => null);
       const supabase = getSupabaseBrowserClient();
       if (supabase) {
         supabase.auth.signOut().catch(() => null);

@@ -1,13 +1,16 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@supabase/supabase-js";
+import { attachStaffSessionCookie, createStaffSessionToken } from "@/lib/auth/staff-session";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 interface PredefinedRoleAccount {
   account: string;
   email: string;
-  passwordDefault: string;
+  passwordEnv: string;
   role: "superadmin" | "kitchen";
   name: string;
 }
@@ -15,22 +18,39 @@ interface PredefinedRoleAccount {
 const PREDEFINED_ACCOUNTS: PredefinedRoleAccount[] = [
   {
     account: "superadmin",
-    email: "superadmin@dropoutcafe.in",
-    passwordDefault: process.env.SUPERADMIN_PASSWORD || "Admin@8081",
+    email: process.env.SUPERADMIN_EMAIL || "superadmin@dropoutcafe.in",
+    passwordEnv: (process.env.SUPERADMIN_PASSWORD || "").trim(),
     role: "superadmin",
     name: "SuperAdmin",
   },
   {
     account: "kitchen",
-    email: "kitchen@dropoutcafe.in",
-    passwordDefault: process.env.KITCHEN_PASSWORD || "Kitchen@8082",
+    email: process.env.KITCHEN_EMAIL || "kitchen@dropoutcafe.in",
+    passwordEnv: (process.env.KITCHEN_PASSWORD || "").trim(),
     role: "kitchen",
     name: "Kitchen Display",
   },
 ];
 
+function safePasswordMatch(provided: string, expected: string): boolean {
+  if (!provided || !expected) return false;
+  const a = Buffer.from(provided, "utf8");
+  const b = Buffer.from(expected, "utf8");
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(`admin-login:${ip}`, 10, 5 * 60 * 1000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many login attempts. Please wait a few minutes and try again." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+      );
+    }
+
     const body = await req.json();
     const rawAccount = (body?.account || body?.role || body?.username || "").trim().toLowerCase();
     const rawPassword = (body?.password || "").trim();
@@ -42,11 +62,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Match predefined account definition
     const matchedPredefined = PREDEFINED_ACCOUNTS.find(
       (a) =>
         a.account === rawAccount ||
-        a.email === rawAccount ||
+        a.email.toLowerCase() === rawAccount ||
         (rawAccount === "admin" && a.role === "superadmin")
     );
 
@@ -60,7 +79,6 @@ export async function POST(req: NextRequest) {
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     let authenticatedUser: { id: string; email: string; role: "superadmin" | "kitchen"; name: string } | null = null;
-    let authSession: unknown = null;
 
     if (supabaseUrl && anonKey) {
       const publicClient = createClient(supabaseUrl, anonKey);
@@ -82,15 +100,14 @@ export async function POST(req: NextRequest) {
           role: resolvedRole,
           name: (signInData.user.user_metadata?.name as string) || (resolvedRole === "kitchen" ? "Kitchen Staff" : "SuperAdmin"),
         };
-        authSession = signInData.session;
-      } else if (matchedPredefined && rawPassword === matchedPredefined.passwordDefault) {
-        // 2. Predefined fallback: if user doesn't exist yet in Supabase Auth, auto-provision
+      } else if (matchedPredefined && safePasswordMatch(rawPassword, matchedPredefined.passwordEnv)) {
+        // 2. Env-configured predefined role: auto-provision in Supabase Auth if missing
         const adminClient = getSupabaseAdminClient();
         if (adminClient) {
           try {
             const { data: created } = await adminClient.auth.admin.createUser({
               email: matchedPredefined.email,
-              password: matchedPredefined.passwordDefault,
+              password: matchedPredefined.passwordEnv,
               email_confirm: true,
               user_metadata: { role: matchedPredefined.role, name: matchedPredefined.name },
             });
@@ -125,8 +142,7 @@ export async function POST(req: NextRequest) {
           };
         }
       }
-    } else if (matchedPredefined && rawPassword === matchedPredefined.passwordDefault) {
-      // Local/Offline fallback
+    } else if (matchedPredefined && safePasswordMatch(rawPassword, matchedPredefined.passwordEnv)) {
       authenticatedUser = {
         id: `local-${matchedPredefined.role}`,
         email: matchedPredefined.email,
@@ -142,13 +158,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    const token = createStaffSessionToken({
+      role: authenticatedUser.role,
+      email: authenticatedUser.email,
+    });
+
+    const response = NextResponse.json({
       success: true,
       user: authenticatedUser,
       role: authenticatedUser.role,
-      session: authSession,
       message: `Authenticated as ${authenticatedUser.name}`,
     });
+    attachStaffSessionCookie(response, token);
+
+    return response;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal authentication error";
     console.error("Admin Login API Error:", err);

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getStaffSessionFromRequest } from "@/lib/auth/staff-session";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import {
   DROPOUT_TABLES,
   normalizeTableNumber,
@@ -85,6 +87,15 @@ async function generateNextOrderNumber(supabaseAdmin: ReturnType<typeof getSupab
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(`create-cafe-order:${ip}`, 20, 5 * 60 * 1000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many orders placed from this device. Please wait a few minutes." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+      );
+    }
+
     const headerIdempotency = req.headers.get("x-idempotency-key");
     const body = (await req.json()) as CreateOrderRequestBody;
 
@@ -291,8 +302,10 @@ export async function POST(req: NextRequest) {
         basePricePaise = "price_paise" in nameMatch ? Number(nameMatch.price_paise) : rupeesToPaise(nameMatch.price);
         dietType = ("diet_type" in nameMatch ? nameMatch.diet_type : nameMatch.dietType || "veg") as DietType;
       } else {
-        // Fallback for items added dynamically
-        basePricePaise = rawItem.price ? rupeesToPaise(rawItem.price) : 0;
+        return NextResponse.json(
+          { error: `Menu item "${itemName}" could not be verified on the server.` },
+          { status: 400 }
+        );
       }
 
       // AVAILABILITY GATE: Reject order if any item is marked unavailable
@@ -349,10 +362,6 @@ export async function POST(req: NextRequest) {
             basePricePaise = rupeesToPaise(mVar.price);
             resolvedVariant = mVar;
           }
-        } else {
-          // If variant was provided in request
-          basePricePaise = rupeesToPaise(rawItem.selectedVariant.price || 0);
-          resolvedVariant = rawItem.selectedVariant;
         }
       }
 
@@ -370,8 +379,13 @@ export async function POST(req: NextRequest) {
           );
           if (dbAddon) {
             addPricePaise = Number(dbAddon.price_paise);
-          } else if (addon.price) {
-            addPricePaise = rupeesToPaise(addon.price);
+          } else {
+            const mockAddon = mockItem?.addOnGroups
+              ?.flatMap((g) => g.options)
+              .find((a) => a.id === addon.id || a.name.toLowerCase() === addon.name.toLowerCase());
+            if (mockAddon) {
+              addPricePaise = rupeesToPaise(mockAddon.price);
+            }
           }
 
           addonsPaise += addPricePaise;
@@ -612,18 +626,35 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const session = getStaffSessionFromRequest(req);
+    const singleOrderId = req.nextUrl.searchParams.get("orderId")?.trim() || "";
+
+    if (!session && !singleOrderId) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
     const supabaseAdmin = getSupabaseAdminClient();
     if (!supabaseAdmin) {
       return NextResponse.json({ orders: [], message: "Supabase not configured, running in local mode" });
     }
 
-    const { data: ordersData, error: ordersError } = await supabaseAdmin
+    let query = supabaseAdmin
       .from("orders")
       .select("*, order_items (*)")
-      .order("created_at", { ascending: false })
-      .limit(100);
+      .order("created_at", { ascending: false });
+
+    if (!session && singleOrderId) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(singleOrderId);
+      query = isUuid
+        ? query.eq("id", singleOrderId).limit(1)
+        : query.eq("order_number", singleOrderId).limit(1);
+    } else {
+      query = query.limit(100);
+    }
+
+    const { data: ordersData, error: ordersError } = await query;
 
     if (ordersError) {
       console.error("Error fetching orders:", ordersError);
@@ -694,6 +725,11 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const session = getStaffSessionFromRequest(req);
+    if (!session) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
     const body = await req.json();
     const { orderId, status, paymentStatus } = body;
 
@@ -748,9 +784,18 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const session = getStaffSessionFromRequest(req);
+    if (!session) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const orderId = searchParams.get("orderId");
     const clearAll = searchParams.get("all") === "true";
+
+    if (clearAll && session.role !== "superadmin") {
+      return NextResponse.json({ error: "Forbidden: SuperAdmin access required" }, { status: 403 });
+    }
 
     const supabaseAdmin = getSupabaseAdminClient();
     if (!supabaseAdmin) {

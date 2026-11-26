@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getStaffSessionFromRequest } from "@/lib/auth/staff-session";
 import { normalizePaymentStatus, paiseToRupees, TableNumber } from "@/lib/utils";
 import { PaymentMethod, PaymentStatus } from "@/types";
 
@@ -33,8 +34,16 @@ export interface AdminPaymentTransaction {
   items?: AdminPaymentItem[];
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const session = getStaffSessionFromRequest(req);
+    if (!session) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+    if (session.role !== "superadmin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const supabaseAdmin = getSupabaseAdminClient();
     if (!supabaseAdmin) {
       return NextResponse.json({

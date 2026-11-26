@@ -152,7 +152,7 @@ export default function TermsAndConditionsPage() {
         <div className="p-3.5 rounded-xl bg-background/70 border border-border text-xs sm:text-sm space-y-1">
           <p className="font-bold text-foreground">{CAFE_DETAILS.name}</p>
           <p className="text-muted-foreground">{CAFE_DETAILS.address}, {CAFE_DETAILS.city}</p>
-          <p className="text-muted-foreground">Phone: +91 83878 98080 / +91 90013 34005 | Email: contact@dropoutcafe.in</p>
+          <p className="text-muted-foreground">Phone: +91 83878 98080 / +91 90013 34005</p>
         </div>
       </section>
     </PolicyLayout>

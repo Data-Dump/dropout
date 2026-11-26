@@ -123,9 +123,6 @@ export default function RefundAndCancellationPolicyPage() {
           <p className="text-muted-foreground">
             Phone: <a href="tel:+918387898080" className="text-primary hover:underline">+91 83878 98080</a> / <a href="tel:+919001334005" className="text-primary hover:underline">+91 90013 34005</a>
           </p>
-          <p className="text-muted-foreground">
-            Email: <a href="mailto:support@dropoutcafe.in" className="text-primary hover:underline">support@dropoutcafe.in</a>
-          </p>
         </div>
       </section>
     </PolicyLayout>

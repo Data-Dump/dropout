@@ -6,7 +6,6 @@ import { CAFE_DETAILS } from "@/lib/data/mock-menu";
 import {
   MapPin,
   Phone,
-  Mail,
   Clock,
   Send,
   MessageSquare,
@@ -115,24 +114,6 @@ export default function ContactUsPage() {
               </div>
             </div>
 
-            {/* Email */}
-            <div className="flex items-start gap-3.5 p-3.5 rounded-xl border border-border/80 bg-background/60">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Mail className="h-4 w-4" />
-              </div>
-              <div className="space-y-0.5">
-                <span className="font-bold text-foreground block">Email Desk</span>
-                <a
-                  href="mailto:contact@dropoutcafe.in"
-                  className="text-muted-foreground hover:text-primary font-semibold transition-colors block"
-                >
-                  contact@dropoutcafe.in
-                </a>
-                <p className="text-[11px] text-muted-foreground">
-                  Support & Feedback: support@dropoutcafe.in
-                </p>
-              </div>
-            </div>
 
             {/* Operating Hours */}
             <div className="flex items-start gap-3.5 p-3.5 rounded-xl border border-border/80 bg-background/60">
@@ -236,12 +217,12 @@ export default function ContactUsPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-foreground">
-                    Phone or Email <span className="text-red-500">*</span>
+                    Phone Number <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="text"
+                    type="tel"
                     required
-                    placeholder="e.g. +91 9876543210 or email"
+                    placeholder="e.g. +91 98765 43210"
                     value={formData.contact}
                     onChange={(e) =>
                       setFormData({ ...formData, contact: e.target.value })

@@ -5,7 +5,6 @@ import { CAFE_DETAILS } from "@/lib/data/mock-menu";
 import {
   MapPin,
   Phone,
-  Mail,
   Clock,
   Coffee,
   ShieldCheck,
@@ -168,15 +167,6 @@ export function Footer() {
                     +91 90013 34005
                   </a>
                 </div>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Mail className="h-4 w-4 text-primary shrink-0" />
-                <a
-                  href="mailto:contact@dropoutcafe.in"
-                  className="hover:text-primary transition-colors"
-                >
-                  contact@dropoutcafe.in
-                </a>
               </div>
               <div className="flex items-center gap-2.5">
                 <Clock className="h-4 w-4 text-primary shrink-0" />

@@ -123,9 +123,6 @@ export default function PrivacyPolicyPage() {
         <div className="p-3.5 rounded-xl bg-background/70 border border-border text-xs sm:text-sm space-y-1">
           <p className="font-bold text-foreground">Grievance Desk — {CAFE_DETAILS.name}</p>
           <p className="text-muted-foreground">{CAFE_DETAILS.address}, {CAFE_DETAILS.city}</p>
-          <p className="text-muted-foreground">
-            Email: <a href="mailto:support@dropoutcafe.in" className="text-primary hover:underline">support@dropoutcafe.in</a>
-          </p>
           <p className="text-muted-foreground">Phone: +91 83878 98080 / +91 90013 34005</p>
         </div>
       </section>

@@ -10,6 +10,12 @@ let ringAudio: HTMLAudioElement | null = null;
 let activeOscillators: OscillatorNode[] = [];
 let chimeTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
+function isStaffAudioRoute(): boolean {
+  if (typeof window === "undefined") return false;
+  const path = window.location.pathname || "";
+  return path.startsWith("/kitchen") || path.startsWith("/admin");
+}
+
 function getAudioContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
 
@@ -124,6 +130,7 @@ function playFallbackSynthesizedChime(): void {
  */
 export function playNewOrderChime(): void {
   try {
+    if (!isStaffAudioRoute()) return;
     stopNewOrderChime();
 
     const audio = getRingAudio();
@@ -154,6 +161,7 @@ export function playNewOrderChime(): void {
  */
 export function unlockAudioContext(): void {
   try {
+    if (!isStaffAudioRoute()) return;
     const ctx = getAudioContext();
     if (ctx && ctx.state === "suspended") {
       ctx.resume().catch(() => {});
@@ -185,6 +193,7 @@ export function unlockAudioContext(): void {
  */
 export function playDelayedOrderAlert(): void {
   try {
+    if (!isStaffAudioRoute()) return;
     const ctx = getAudioContext();
     if (!ctx) return;
 

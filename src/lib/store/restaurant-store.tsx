@@ -214,13 +214,10 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
         try {
           const parsed = JSON.parse(storedMenuItems);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const cleaned = parsed.filter(
-              (p: MenuItem) => p.id !== "item-test-1rs" && p.id !== "00000000-0000-0000-0000-000000000001" && !p.name.includes("₹1 Test")
-            );
             const missingMockItems = MOCK_MENU_ITEMS.filter(
-              (m) => !cleaned.some((p: MenuItem) => p.id === m.id || p.name === m.name)
+              (m) => !parsed.some((p: MenuItem) => p.id === m.id || p.name === m.name)
             );
-            setMenuItems([...missingMockItems, ...cleaned]);
+            setMenuItems([...missingMockItems, ...parsed]);
           }
         } catch (e) {
           console.warn("Could not parse menu items from local storage:", e);
@@ -377,12 +374,12 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
             };
           });
 
-          // Filter out any test item remnants
-          const filtered = mapped.filter(
-            (m) => m.id !== "item-test-1rs" && m.id !== "00000000-0000-0000-0000-000000000001" && !m.name.includes("₹1 Test")
-          );
+          // If test item is in MOCK_MENU_ITEMS, ensure it is retained
+          const hasTestItem = mapped.some((m) => m.id === "item-test-1rs" || m.name.includes("₹1"));
+          const testMockItem = MOCK_MENU_ITEMS.find((m) => m.id === "item-test-1rs");
+          const finalItems = !hasTestItem && testMockItem ? [testMockItem, ...mapped] : mapped;
 
-          setMenuItems(filtered);
+          setMenuItems(finalItems);
         }
       } catch (err) {
         console.warn("Menu items sync skipped:", err);

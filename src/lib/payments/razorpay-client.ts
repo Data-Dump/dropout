@@ -138,10 +138,16 @@ export async function initiateRazorpayPayment({
       return;
     }
 
-    const razorpayKey =
-      createData.key_id ||
-      process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
-      "rzp_test_U4qbAo9YOu1FHi";
+    const razorpayKey = (createData.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "").trim();
+    if (!razorpayKey) {
+      const err = "Razorpay Key ID is missing from server configuration.";
+      toast.error(err);
+      onFailure?.(err);
+      return;
+    }
+
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const logoUrl = origin ? `${origin}/logo.png` : undefined;
 
     // 3. Open Razorpay Standard Checkout modal
     const options: RazorpayCheckoutOptions = {
@@ -150,11 +156,11 @@ export async function initiateRazorpayPayment({
       currency: createData.currency || "INR",
       name: "DROPOUT Cafe & Restro",
       description: tableNumber ? `Dining Order for ${tableNumber}` : "Cafe Dine-in & Takeaway",
-      image: "/logo.png",
+      image: logoUrl,
       order_id: createData.order_id,
       prefill: {
         name: customerName || "",
-        contact: customerPhone || "",
+        contact: customerPhone ? customerPhone.replace(/\D/g, "") : "",
       },
       theme: {
         color: "#C35B29", // Cafe terracotta brand amber

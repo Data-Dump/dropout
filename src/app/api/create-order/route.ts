@@ -84,13 +84,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const serverKeyId = (process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "").trim();
+
     return NextResponse.json({
       success: true,
       order_id: razorpayOrder.id,
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,
       receipt: razorpayOrder.receipt,
-      key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID,
+      key_id: serverKeyId,
     });
   } catch (error: unknown) {
     console.error("Error creating Razorpay order:", error);

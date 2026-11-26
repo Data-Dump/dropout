@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { DietBadge } from "@/components/ui/diet-badge";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, getItemParcelChargeRupees } from "@/lib/utils";
 import { useRestaurant } from "@/lib/store/restaurant-store";
-import { Plus, Minus, Trash2, ArrowRight, UtensilsCrossed, MapPin, ChevronLeft } from "lucide-react";
+import { Plus, Minus, Trash2, ArrowRight, UtensilsCrossed, MapPin, ChevronLeft, Package } from "lucide-react";
 
 interface CartDrawerProps {
   open: boolean;
@@ -31,8 +31,10 @@ export function CartDrawer({
     cart,
     removeFromCart,
     updateQuantity,
+    toggleCartItemParcel,
     cartSubtotal,
     cartTax,
+    cartPackingCharges,
     cartTotal,
     selectedTable,
     clearCart,
@@ -120,7 +122,15 @@ export function CartDrawer({
               </Button>
             </div>
           ) : (
-            cart.map((item) => (
+            cart.map((item) => {
+              const parcelRate = getItemParcelChargeRupees(
+                item.menuItem.name,
+                item.menuItem.categoryName,
+                item.menuItem.categoryId
+              );
+              const itemParcelTotal = item.isParcel ? parcelRate * item.quantity : 0;
+
+              return (
               <div key={item.id} className="pt-3.5 first:pt-0 flex items-start justify-between gap-3">
                 {/* Item Thumbnail */}
                 <div className="relative h-14 w-14 shrink-0 rounded-xl overflow-hidden bg-muted">
@@ -166,12 +176,37 @@ export function CartDrawer({
                       Note: &quot;{item.specialInstructions}&quot;
                     </p>
                   )}
+
+                  {/* Individual Parcel Toggle */}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleCartItemParcel(item.id)}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all active:scale-95 ${
+                        item.isParcel
+                          ? "bg-primary/10 border-primary/40 text-primary shadow-2xs"
+                          : "bg-secondary/60 border-border/80 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      <Package className="h-3 w-3" />
+                      <span>
+                        {item.isParcel ? `Parcel ✓ (+₹${parcelRate}/pc)` : `Pack as Parcel (+₹${parcelRate}/pc)`}
+                      </span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex flex-col items-end gap-1.5 shrink-0">
-                  <span className="font-black text-sm text-foreground">
-                    {formatCurrency(item.unitPrice * item.quantity)}
-                  </span>
+                  <div className="text-right">
+                    <span className="font-black text-sm text-foreground block">
+                      {formatCurrency(item.unitPrice * item.quantity + itemParcelTotal)}
+                    </span>
+                    {item.isParcel && (
+                      <span className="text-[10px] font-semibold text-primary block">
+                        +{formatCurrency(itemParcelTotal)} parcel
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card p-1 shadow-2xs">
                     <button
@@ -204,7 +239,8 @@ export function CartDrawer({
                   </div>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -212,17 +248,23 @@ export function CartDrawer({
         {cart.length > 0 && (
           <div className="p-4 sm:p-5 border-t border-border/80 bg-background space-y-3">
             <div className="space-y-1.5 text-xs text-muted-foreground">
+              {(cartTax > 0 || cartPackingCharges > 0) && (
+                <div className="flex justify-between">
+                  <span>Items Subtotal</span>
+                  <span className="font-semibold text-foreground">{formatCurrency(cartSubtotal)}</span>
+                </div>
+              )}
+              {cartPackingCharges > 0 && (
+                <div className="flex justify-between text-primary font-medium">
+                  <span>Packing Charges (Parcel)</span>
+                  <span className="font-bold">{formatCurrency(cartPackingCharges)}</span>
+                </div>
+              )}
               {cartTax > 0 && (
-                <>
-                  <div className="flex justify-between">
-                    <span>Items Subtotal</span>
-                    <span className="font-semibold text-foreground">{formatCurrency(cartSubtotal)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Restaurant GST</span>
-                    <span className="font-semibold text-foreground">{formatCurrency(cartTax)}</span>
-                  </div>
-                </>
+                <div className="flex justify-between">
+                  <span>Restaurant GST</span>
+                  <span className="font-semibold text-foreground">{formatCurrency(cartTax)}</span>
+                </div>
               )}
               <div className="flex justify-between text-sm font-bold text-foreground pt-1.5 border-t border-border/60">
                 <span>Total Amount</span>

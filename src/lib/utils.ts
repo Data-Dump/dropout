@@ -94,3 +94,27 @@ export function normalizePaymentStatus(rawStatus?: string | null): "PENDING" | "
   if (s === "REFUNDED") return "REFUNDED";
   return "PENDING";
 }
+
+/**
+ * Checks whether a menu item is a pizza (by item name, category name, or category ID).
+ */
+export function isPizzaItem(name?: string, categoryName?: string, categoryId?: string): boolean {
+  const n = (name || "").toLowerCase();
+  const c = (categoryName || "").toLowerCase();
+  const id = (categoryId || "").toLowerCase();
+  return n.includes("pizza") || c.includes("pizza") || id.includes("pizza");
+}
+
+/**
+ * Per-unit parcel/packing charge in rupees: ₹15 for pizzas, ₹10 for all other items.
+ */
+export function getItemParcelChargeRupees(name?: string, categoryName?: string, categoryId?: string): number {
+  return isPizzaItem(name, categoryName, categoryId) ? 15 : 10;
+}
+
+/**
+ * Per-unit parcel/packing charge in paise: 1500 paise (₹15) for pizzas, 1000 paise (₹10) for all other items.
+ */
+export function getItemParcelChargePaise(name?: string, categoryName?: string, categoryId?: string): number {
+  return isPizzaItem(name, categoryName, categoryId) ? 1500 : 1000;
+}

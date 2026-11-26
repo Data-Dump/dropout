@@ -458,17 +458,23 @@ export default function OrderTrackingPage() {
 
           {/* Pricing Breakdown */}
           <div className="pt-3 border-t border-border/60 space-y-1.5 text-xs">
+            {(order.tax > 0 || (order.packingCharges ?? 0) > 0 || order.total > order.subtotal) && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Item Subtotal:</span>
+                <span>{formatCurrency(order.subtotal)}</span>
+              </div>
+            )}
+            {((order.packingCharges ?? 0) > 0 || order.total - order.subtotal - order.tax > 0) && (
+              <div className="flex justify-between text-primary font-medium">
+                <span>Packing Charges (Parcel):</span>
+                <span>{formatCurrency(order.packingCharges ?? Math.max(0, order.total - order.subtotal - order.tax))}</span>
+              </div>
+            )}
             {order.tax > 0 && (
-              <>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Item Subtotal:</span>
-                  <span>{formatCurrency(order.subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>GST:</span>
-                  <span>{formatCurrency(order.tax)}</span>
-                </div>
-              </>
+              <div className="flex justify-between text-muted-foreground">
+                <span>GST:</span>
+                <span>{formatCurrency(order.tax)}</span>
+              </div>
             )}
             <div className="flex justify-between text-sm font-black text-foreground pt-1.5 border-t border-border/40">
               <span>Total Amount:</span>

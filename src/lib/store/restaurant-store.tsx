@@ -16,7 +16,7 @@ import {
   StaffMember,
   TableState,
 } from "@/types";
-import { DROPOUT_TABLES, TableNumber, paiseToRupees, rupeesToPaise, normalizeOrderStatus, normalizePaymentStatus } from "@/lib/utils";
+import { DROPOUT_TABLES, TableNumber, paiseToRupees, rupeesToPaise, normalizeOrderStatus, normalizePaymentStatus, getItemParcelChargeRupees } from "@/lib/utils";
 import { CAFE_DETAILS, MOCK_CATEGORIES, MOCK_MENU_ITEMS } from "@/lib/data/mock-menu";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { playNewOrderChime } from "@/lib/audio";
@@ -66,10 +66,12 @@ interface RestaurantContextType {
   ) => void;
   removeFromCart: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
+  toggleCartItemParcel: (cartItemId: string) => void;
   clearCart: () => void;
   cartCount: number;
   cartSubtotal: number;
   cartTax: number;
+  cartPackingCharges: number;
   cartTotal: number;
 
   // Orders state
@@ -689,6 +691,14 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
     setCart([]);
   };
 
+  const toggleCartItemParcel = (cartItemId: string) => {
+    setCart((prev) =>
+      prev.map((item) =>
+        item.id === cartItemId ? { ...item, isParcel: !item.isParcel } : item
+      )
+    );
+  };
+
   // Cart calculations
   const cartCount = useMemo(() => {
     return cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -702,9 +712,21 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
     return Math.round(cartSubtotal * CAFE_DETAILS.gstRate * 100) / 100;
   }, [cartSubtotal]);
 
+  const cartPackingCharges = useMemo(() => {
+    return cart.reduce((sum, item) => {
+      if (!item.isParcel) return sum;
+      const perUnit = getItemParcelChargeRupees(
+        item.menuItem.name,
+        item.menuItem.categoryName,
+        item.menuItem.categoryId
+      );
+      return sum + perUnit * item.quantity;
+    }, 0);
+  }, [cart]);
+
   const cartTotal = useMemo(() => {
-    return Math.round(cartSubtotal + cartTax);
-  }, [cartSubtotal, cartTax]);
+    return Math.round(cartSubtotal + cartTax + cartPackingCharges);
+  }, [cartSubtotal, cartTax, cartPackingCharges]);
 
   // Order operations
   const placeOrder = async (params: PlaceOrderParams): Promise<Order> => {
@@ -728,6 +750,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
           specialInstructions: c.specialInstructions,
           isCombo: c.menuItem.isCombo,
           comboIncludes: c.menuItem.comboIncludes,
+          isParcel: Boolean(c.isParcel),
         })),
       };
 
@@ -793,6 +816,10 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
       specialInstructions: c.specialInstructions,
       isCombo: c.menuItem.isCombo,
       comboIncludes: c.menuItem.comboIncludes,
+      isParcel: Boolean(c.isParcel),
+      parcelCharge: c.isParcel
+        ? getItemParcelChargeRupees(c.menuItem.name, c.menuItem.categoryName, c.menuItem.categoryId) * c.quantity
+        : 0,
     }));
 
     const newOrder: Order = {
@@ -802,6 +829,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
       items: orderItems,
       subtotal: cartSubtotal,
       tax: cartTax,
+      packingCharges: cartPackingCharges,
       total: cartTotal,
       status: "NEW",
       paymentMethod: params.paymentMethod,
@@ -1434,10 +1462,12 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
         addToCart,
         removeFromCart,
         updateQuantity,
+        toggleCartItemParcel,
         clearCart,
         cartCount,
         cartSubtotal,
         cartTax,
+        cartPackingCharges,
         cartTotal,
         orders,
         placeOrder,

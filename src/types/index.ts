@@ -66,6 +66,7 @@ export interface CartItem {
   selectedAddOns?: AddOnOption[];
   specialInstructions?: string;
   unitPrice: number; // base price (or variant price) + selected addons price
+  isParcel?: boolean; // individual item parcel/takeaway packaging option
 }
 
 export type OrderStatus =
@@ -93,6 +94,8 @@ export interface OrderItem {
   specialInstructions?: string;
   isCombo?: boolean;
   comboIncludes?: string[];
+  isParcel?: boolean;
+  parcelCharge?: number;
 }
 
 export interface Order {
@@ -102,6 +105,7 @@ export interface Order {
   items: OrderItem[];
   subtotal: number;
   tax: number; // 5% GST
+  packingCharges?: number;
   total: number;
   subtotalPaise?: number;
   taxPaise?: number;

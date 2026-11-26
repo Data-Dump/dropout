@@ -10,6 +10,7 @@ import {
   normalizePaymentStatus,
   paiseToRupees,
   rupeesToPaise,
+  getItemParcelChargePaise,
   TableNumber,
 } from "@/lib/utils";
 import { MOCK_MENU_ITEMS } from "@/lib/data/mock-menu";
@@ -28,6 +29,7 @@ interface IncomingOrderItem {
   specialInstructions?: string;
   isCombo?: boolean;
   comboIncludes?: string[];
+  isParcel?: boolean;
 }
 
 interface CreateOrderRequestBody {
@@ -262,6 +264,7 @@ export async function POST(req: NextRequest) {
 
     // 6. Strict Zero-Trust Price & Availability Validation
     let subtotalPaise = 0;
+    let packingChargesPaise = 0;
     const validatedItems: OrderItem[] = [];
     const dbOrderItemsToInsert: {
       menu_item_id: string | null;
@@ -400,6 +403,20 @@ export async function POST(req: NextRequest) {
       const itemTotalPaise = unitTotalPaise * quantity;
       subtotalPaise += itemTotalPaise;
 
+      const isParcel = Boolean(rawItem.isParcel);
+      const parcelChargePaisePerUnit = isParcel
+        ? getItemParcelChargePaise(itemName, mockItem?.categoryName, mockItem?.categoryId)
+        : 0;
+      const itemParcelPaise = parcelChargePaisePerUnit * quantity;
+      packingChargesPaise += itemParcelPaise;
+
+      const sanitizedInstr = sanitizeText(rawItem.specialInstructions, 200);
+      const combinedInstructions = isParcel
+        ? sanitizedInstr
+          ? `[PARCEL] ${sanitizedInstr}`
+          : "[PARCEL]"
+        : sanitizedInstr || undefined;
+
       const orderItemId = `oi-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
       const comboTags = (dbItem?.tags || []).filter((t: string) => t.startsWith("combo:")).map((t: string) => t.replace(/^combo:/, ""));
@@ -419,9 +436,11 @@ export async function POST(req: NextRequest) {
         dietType,
         selectedVariant: resolvedVariant || undefined,
         selectedAddOns: uiAddons.length > 0 ? uiAddons : undefined,
-        specialInstructions: sanitizeText(rawItem.specialInstructions, 200) || undefined,
+        specialInstructions: combinedInstructions,
         isCombo,
         comboIncludes,
+        isParcel,
+        parcelCharge: paiseToRupees(itemParcelPaise),
       });
 
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawItem.menuItemId);
@@ -434,17 +453,18 @@ export async function POST(req: NextRequest) {
         diet_type: dietType,
         selected_variant: resolvedVariant,
         selected_addons: formattedAddons,
-        special_instructions: sanitizeText(rawItem.specialInstructions, 200) || null,
-        total_price_paise: itemTotalPaise,
+        special_instructions: combinedInstructions || null,
+        total_price_paise: itemTotalPaise + itemParcelPaise,
       });
     }
 
-    // 7. No GST (GST removed per cafe policy)
+    // 7. No GST (GST removed per cafe policy), include server-verified parcel packing charges
     const taxPaise = 0;
-    const totalPaise = subtotalPaise;
+    const totalPaise = subtotalPaise + packingChargesPaise;
 
     const subtotalRupees = paiseToRupees(subtotalPaise);
     const taxRupees = paiseToRupees(taxPaise);
+    const packingRupees = paiseToRupees(packingChargesPaise);
     const totalRupees = paiseToRupees(totalPaise);
 
     // 8. Human-readable unique sequential Order Number (DRP-date-order, e.g. DRP-YYYYMMDD-001)
@@ -595,6 +615,7 @@ export async function POST(req: NextRequest) {
       items: validatedItems,
       subtotal: subtotalRupees,
       tax: taxRupees,
+      packingCharges: packingRupees,
       total: totalRupees,
       subtotalPaise,
       taxPaise,

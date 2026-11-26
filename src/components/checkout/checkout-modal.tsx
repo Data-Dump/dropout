@@ -11,7 +11,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, getItemParcelChargeRupees } from "@/lib/utils";
 import { useRestaurant } from "@/lib/store/restaurant-store";
 import { PaymentMethod } from "@/types";
 import { initiateRazorpayPayment } from "@/lib/payments/razorpay-client";
@@ -41,6 +41,7 @@ export function CheckoutModal({ open, onOpenChange }: CheckoutModalProps) {
     cart,
     cartSubtotal,
     cartTax,
+    cartPackingCharges,
     cartTotal,
     placeOrder,
     updatePaymentStatus,
@@ -186,12 +187,27 @@ export function CheckoutModal({ open, onOpenChange }: CheckoutModalProps) {
             </div>
 
             <div className="space-y-2 divide-y divide-border/40 text-xs">
-              {cart.map((item) => (
+              {cart.map((item) => {
+                const parcelCharge = item.isParcel
+                  ? getItemParcelChargeRupees(
+                      item.menuItem.name,
+                      item.menuItem.categoryName,
+                      item.menuItem.categoryId
+                    ) * item.quantity
+                  : 0;
+                return (
                 <div key={item.id} className="pt-2 first:pt-0 flex items-start justify-between gap-2">
                   <div className="space-y-0.5">
-                    <span className="font-semibold text-foreground">
-                      {item.quantity}x {item.menuItem.name}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-semibold text-foreground">
+                        {item.quantity}x {item.menuItem.name}
+                      </span>
+                      {item.isParcel && (
+                        <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold">
+                          Parcel (+{formatCurrency(parcelCharge)})
+                        </span>
+                      )}
+                    </div>
                     {item.selectedAddOns && item.selectedAddOns.length > 0 && (
                       <p className="text-[11px] text-muted-foreground">
                         {item.selectedAddOns.map((a) => a.name).join(", ")}
@@ -204,18 +220,25 @@ export function CheckoutModal({ open, onOpenChange }: CheckoutModalProps) {
                     )}
                   </div>
                   <span className="font-bold text-foreground shrink-0">
-                    {formatCurrency(item.unitPrice * item.quantity)}
+                    {formatCurrency(item.unitPrice * item.quantity + parcelCharge)}
                   </span>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Price breakdown */}
             <div className="pt-2.5 border-t border-border/70 space-y-1 text-xs">
-              {cartTax > 0 && (
+              {(cartTax > 0 || cartPackingCharges > 0) && (
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal</span>
                   <span>{formatCurrency(cartSubtotal)}</span>
+                </div>
+              )}
+              {cartPackingCharges > 0 && (
+                <div className="flex justify-between text-primary font-medium">
+                  <span>Packing Charges (Parcel)</span>
+                  <span className="font-bold">{formatCurrency(cartPackingCharges)}</span>
                 </div>
               )}
               {cartTax > 0 && (

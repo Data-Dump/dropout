@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getStaffSessionFromRequest } from "@/lib/auth/staff-session";
+import { getStaffSessionFromRequest, isDirectBrowserDocumentRequest } from "@/lib/auth/staff-session";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import {
   DROPOUT_TABLES,
@@ -628,6 +628,10 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    if (isDirectBrowserDocumentRequest(req)) {
+      return NextResponse.json({ error: "Direct browser access is disabled" }, { status: 403 });
+    }
+
     const session = getStaffSessionFromRequest(req);
     const singleOrderId = req.nextUrl.searchParams.get("orderId")?.trim() || "";
 

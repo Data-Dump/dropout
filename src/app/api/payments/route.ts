@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getStaffSessionFromRequest } from "@/lib/auth/staff-session";
+import { getStaffSessionFromRequest, isDirectBrowserDocumentRequest } from "@/lib/auth/staff-session";
 import { normalizePaymentStatus, paiseToRupees, TableNumber } from "@/lib/utils";
 import { PaymentMethod, PaymentStatus } from "@/types";
 
@@ -36,6 +36,10 @@ export interface AdminPaymentTransaction {
 
 export async function GET(req: NextRequest) {
   try {
+    if (isDirectBrowserDocumentRequest(req)) {
+      return NextResponse.json({ error: "Direct browser access is disabled" }, { status: 403 });
+    }
+
     const session = getStaffSessionFromRequest(req);
     if (!session) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });

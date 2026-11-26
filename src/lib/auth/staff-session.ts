@@ -108,3 +108,19 @@ export function clearStaffSessionCookie(res: NextResponse): void {
     maxAge: 0,
   });
 }
+
+/**
+ * Blocks direct browser address-bar navigation (e.g. opening /api/orders in a tab)
+ * while allowing fetch/XHR API calls from the Next.js frontend.
+ */
+export function isDirectBrowserDocumentRequest(req: NextRequest): boolean {
+  const fetchDest = (req.headers.get("sec-fetch-dest") || "").toLowerCase();
+  if (fetchDest === "document") {
+    return true;
+  }
+  const accept = (req.headers.get("accept") || "").toLowerCase();
+  if (accept.includes("text/html") && !accept.includes("application/json")) {
+    return true;
+  }
+  return false;
+}

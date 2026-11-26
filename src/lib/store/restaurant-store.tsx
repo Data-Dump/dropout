@@ -214,10 +214,13 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
         try {
           const parsed = JSON.parse(storedMenuItems);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const missingMockItems = MOCK_MENU_ITEMS.filter(
-              (m) => !parsed.some((p: MenuItem) => p.id === m.id || p.name === m.name)
+            const cleaned = parsed.filter(
+              (p: MenuItem) => p.id !== "item-test-1rs" && !p.name.includes("₹1")
             );
-            setMenuItems([...missingMockItems, ...parsed]);
+            const missingMockItems = MOCK_MENU_ITEMS.filter(
+              (m) => !cleaned.some((p: MenuItem) => p.id === m.id || p.name === m.name)
+            );
+            setMenuItems([...missingMockItems, ...cleaned]);
           }
         } catch (e) {
           console.warn("Could not parse menu items from local storage:", e);
@@ -374,12 +377,12 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
             };
           });
 
-          // If test item is in MOCK_MENU_ITEMS, ensure it is retained
-          const hasTestItem = mapped.some((m) => m.id === "item-test-1rs" || m.name.includes("₹1"));
-          const testMockItem = MOCK_MENU_ITEMS.find((m) => m.id === "item-test-1rs");
-          const finalItems = !hasTestItem && testMockItem ? [testMockItem, ...mapped] : mapped;
+          // Filter out test items from production menu
+          const filtered = mapped.filter(
+            (m) => m.id !== "item-test-1rs" && !m.name.includes("₹1")
+          );
 
-          setMenuItems(finalItems);
+          setMenuItems(filtered);
         }
       } catch (err) {
         console.warn("Menu items sync skipped:", err);
@@ -396,14 +399,21 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
 
             // Detect new orders that arrived after initial load
             if (!isInitialOrderSyncRef.current) {
+              const isStaffRoute =
+                typeof window !== "undefined" &&
+                (window.location.pathname.startsWith("/kitchen") ||
+                  window.location.pathname.startsWith("/admin"));
+
               const newlyArrived = fetchedOrders.filter(
                 (o) =>
                   !knownOrderIdsRef.current.has(o.id) &&
                   (normalizeOrderStatus(o.status) === "NEW" || normalizeOrderStatus(o.status) === "ACCEPTED")
               );
 
-              if (newlyArrived.length > 0) {
-                // Play melodic harmonic restaurant chime
+              // ONLY ring chime and show incoming order toast on staff routes (/kitchen, /admin)
+              // Customers on menu, table or order pages will NEVER be disturbed
+              if (newlyArrived.length > 0 && isStaffRoute) {
+                // Play melodic harmonic restaurant chime for kitchen/admin staff
                 playNewOrderChime();
 
                 const firstOrder = newlyArrived[0];

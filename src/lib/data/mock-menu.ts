@@ -87,26 +87,6 @@ export const MOCK_CATEGORIES: Category[] = [
 
 export const MOCK_MENU_ITEMS: MenuItem[] = [
   // ---------------------------------------------------------------------------
-  // 0. LIVE PAYMENT TEST ITEM (₹1)
-  // ---------------------------------------------------------------------------
-  {
-    id: "item-test-1rs",
-    categoryId: "cat-combos",
-    categoryName: "Combos & Quick Bites",
-    name: "⚡ Live Test Item (₹1)",
-    description: "Production payment test item for Razorpay live checkout verification.",
-    price: 1,
-    oldPrice: 10,
-    discountText: "90% OFF",
-    dietType: "veg",
-    imageUrl: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=700&q=80",
-    isAvailable: true,
-    isBestseller: true,
-    displayOrder: 0,
-    portionSize: "1 Test Order",
-    tags: ["Live Test", "Razorpay ₹1"],
-  },
-  // ---------------------------------------------------------------------------
   // 1. COMBOS
   // ---------------------------------------------------------------------------
   {

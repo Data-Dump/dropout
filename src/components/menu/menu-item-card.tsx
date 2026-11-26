@@ -23,10 +23,15 @@ export function MenuItemCard({ item, onOpenDetails }: MenuItemCardProps) {
   const cartEntries = cart.filter((c) => c.menuItem.id === item.id);
   const currentQuantity = cartEntries.reduce((sum, c) => sum + c.quantity, 0);
 
+  const hasCustomizations = Boolean(
+    (item.variants && item.variants.length > 0) ||
+    (item.addOnGroups && item.addOnGroups.length > 0)
+  );
+
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // If item has customizable add-on groups, open details modal instead
-    if (item.addOnGroups && item.addOnGroups.length > 0) {
+    // If item has size variants or customizable add-on groups, open customization modal
+    if (hasCustomizations) {
       onOpenDetails(item);
       return;
     }
@@ -43,8 +48,6 @@ export function MenuItemCard({ item, onOpenDetails }: MenuItemCardProps) {
       updateQuantity(cartEntries[0].id, cartEntries[0].quantity - 1);
     }
   };
-
-  const hasCustomizations = item.addOnGroups && item.addOnGroups.length > 0;
 
   return (
     <div

@@ -187,6 +187,7 @@ export function MenuItemModal({ item, open, onOpenChange }: MenuItemModalProps) 
               <div className="grid grid-cols-2 gap-2">
                 {item.variants.map((v) => {
                   const isSelected = selectedVariant?.id === v.id;
+                  const diff = v.price - item.price;
                   return (
                     <button
                       key={v.id}
@@ -200,7 +201,12 @@ export function MenuItemModal({ item, open, onOpenChange }: MenuItemModalProps) 
                       )}
                     >
                       <span className="text-xs font-semibold">{v.name}</span>
-                      <span className="text-xs font-black">{formatCurrency(v.price)}</span>
+                      <div className="text-right leading-tight">
+                        <span className="text-xs font-black block">{formatCurrency(v.price)}</span>
+                        {diff > 0 && (
+                          <span className="text-[10px] font-semibold text-primary block">+{formatCurrency(diff)}</span>
+                        )}
+                      </div>
                     </button>
                   );
                 })}

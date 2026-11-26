@@ -121,8 +121,7 @@ INSERT INTO public.menu_items (id, category_id, name, description, price_paise, 
   ('ba4d5e5c-da45-5903-900e-efc730dc8349', '452e7fcf-ea76-5a01-aacb-f9af365d9436', 'Masala Tea', 'Spiced kadak chai brewed with ginger, cardamom & tea masala.', 1500, 'veg', '/images/menu/masala-chai.jpg', TRUE, ARRAY[]::TEXT[]),
   ('162690d8-5186-53c0-a2b9-6d91e93cdfa6', '0183964f-3113-5233-aa5e-9545b8518bb9', 'Hot Coffee', 'Warm, frothy classic cafe-style hot coffee.', 3000, 'veg', 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&h=600&q=80', TRUE, ARRAY[]::TEXT[]),
   ('e172f96a-fdc5-56d5-98c3-5f459bee7f0c', '0183964f-3113-5233-aa5e-9545b8518bb9', 'Black Coffee / Espresso', 'Strong freshly brewed black coffee shot.', 4000, 'veg', 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&w=600&h=600&q=80', TRUE, ARRAY[]::TEXT[]),
-  ('ef433d6b-143c-57ed-840a-a0d08bb986b3', '0183964f-3113-5233-aa5e-9545b8518bb9', 'Cold Coffee Small', 'Chilled blended creamy cold coffee (Small).', 5000, 'veg', 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&h=600&q=80', TRUE, ARRAY[]::TEXT[]),
-  ('68671527-5dd2-5561-8de8-2e1efe56c23e', '0183964f-3113-5233-aa5e-9545b8518bb9', 'Cold Coffee Large', 'Chilled blended creamy cold coffee (Large).', 7000, 'veg', 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&h=600&q=80', TRUE, ARRAY[]::TEXT[]),
+  ('ef433d6b-143c-57ed-840a-a0d08bb986b3', '0183964f-3113-5233-aa5e-9545b8518bb9', 'Cold Coffee', 'Chilled blended creamy cold coffee.', 5000, 'veg', 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&h=600&q=80', TRUE, ARRAY[]::TEXT[]),
   ('f159246b-8b80-50ff-bc2e-0adca5ac5bd8', '0183964f-3113-5233-aa5e-9545b8518bb9', 'Cold Coffee with Ice Cream', 'Rich cold coffee topped with a scoop of vanilla ice cream.', 8000, 'veg', 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=600&h=600&q=80', TRUE, ARRAY[]::TEXT[]),
   ('4011c672-c259-5541-95db-d14664c7533f', '10529d57-3011-5384-a8ee-1df5358f35f9', 'Vanilla Shake', 'Smooth and creamy classic vanilla bean milkshake.', 6000, 'veg', '/images/menu/vanilla-shake.jpg', TRUE, ARRAY[]::TEXT[]),
   ('3f4d2fbb-c483-57f4-9f3e-249697e0c0ea', '10529d57-3011-5384-a8ee-1df5358f35f9', 'Butterscotch Shake', 'Rich caramel butterscotch blended milkshake.', 6000, 'veg', 'https://images.unsplash.com/photo-1579954115545-a95591f28bfc?auto=format&fit=crop&w=600&h=600&q=80', TRUE, ARRAY[]::TEXT[]),
@@ -144,6 +143,8 @@ INSERT INTO public.menu_items (id, category_id, name, description, price_paise, 
   ('53a4c389-2a95-50d1-8fa6-53a16a03ae09', '8e5e6237-5d1b-59cf-a66a-c3dbdcab4ef4', 'Cheese Nachos', 'Crispy tortilla nachos topped with warm melted cheese & salsa.', 8000, 'veg', '/images/menu/cheese-nachos.jpg', TRUE, ARRAY[]::TEXT[]);
 
 INSERT INTO public.menu_variants (id, menu_item_id, name, price_paise, is_default, is_available, display_order) VALUES
+  ('c3845132-8900-51a4-90e6-29a6379a6b01', 'ef433d6b-143c-57ed-840a-a0d08bb986b3', 'Small', 5000, TRUE, TRUE, 0),
+  ('d4956243-9011-52b5-a1f7-30b7480b7c12', 'ef433d6b-143c-57ed-840a-a0d08bb986b3', 'Large', 7000, FALSE, TRUE, 1),
   ('d32a7423-7a72-5165-b9f9-ace4a0bb3374', 'f159246b-8b80-50ff-bc2e-0adca5ac5bd8', 'Small', 8000, TRUE, TRUE, 0),
   ('0a6857cb-3506-5d56-9e01-080c44b3c89b', 'f159246b-8b80-50ff-bc2e-0adca5ac5bd8', 'Large', 10000, FALSE, TRUE, 1),
   ('c098da5b-fcc6-536c-8871-830b8f428629', '4011c672-c259-5541-95db-d14664c7533f', 'Small', 6000, TRUE, TRUE, 0),

@@ -7,11 +7,16 @@ import crypto from "crypto";
 let razorpayInstance: Razorpay | null = null;
 
 export function getRazorpayClient(): Razorpay {
-  const key_id = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-  const key_secret = process.env.RAZORPAY_KEY_SECRET;
+  const key_id = (process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "").trim();
+  const key_secret = (process.env.RAZORPAY_KEY_SECRET || "").trim();
 
   if (!key_id || !key_secret) {
-    throw new Error("Razorpay credentials (RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET) are missing.");
+    const missing: string[] = [];
+    if (!key_id) missing.push("RAZORPAY_KEY_ID");
+    if (!key_secret) missing.push("RAZORPAY_KEY_SECRET");
+    throw new Error(
+      `Razorpay credentials missing on server: ${missing.join(", ")}. Please ensure they are added in Vercel Project Settings > Environment Variables and that the project is redeployed.`
+    );
   }
 
   if (!razorpayInstance) {

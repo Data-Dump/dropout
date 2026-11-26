@@ -39,10 +39,14 @@ export async function POST(req: NextRequest) {
     try {
       razorpay = getRazorpayClient();
     } catch (authErr) {
-      console.error("Razorpay Authentication Configuration Error:", authErr);
+      const msg =
+        authErr instanceof Error
+          ? authErr.message
+          : "Razorpay credentials are missing on server. Please check Vercel Environment Variables.";
+      console.error("Razorpay Authentication Configuration Error:", msg);
       return NextResponse.json(
         {
-          error: "Razorpay authentication failed. Please check server credentials.",
+          error: msg,
         },
         { status: 401 }
       );

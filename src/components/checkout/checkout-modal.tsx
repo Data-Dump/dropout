@@ -14,8 +14,9 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { useRestaurant } from "@/lib/store/restaurant-store";
 import { PaymentMethod } from "@/types";
+import { initiateRazorpayPayment } from "@/lib/payments/razorpay-client";
 import {
-  QrCode,
+  CreditCard,
   CheckCircle2,
   MapPin,
   FileText,
@@ -35,9 +36,17 @@ interface CheckoutModalProps {
 
 export function CheckoutModal({ open, onOpenChange }: CheckoutModalProps) {
   const router = useRouter();
-  const { selectedTable, cart, cartSubtotal, cartTax, cartTotal, placeOrder } = useRestaurant();
+  const {
+    selectedTable,
+    cart,
+    cartSubtotal,
+    cartTax,
+    cartTotal,
+    placeOrder,
+    updatePaymentStatus,
+  } = useRestaurant();
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("counter");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi_online");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [notes, setNotes] = useState("");
@@ -79,26 +88,43 @@ export function CheckoutModal({ open, onOpenChange }: CheckoutModalProps) {
         idempotencyKey,
       });
 
-      // If paying via UPI PhonePe, initiate the server-side payment session
+      // If paying Online via Razorpay
       if (paymentMethod === "upi_online") {
-        try {
-          const payRes = await fetch("/api/payments/create", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              orderId: order.id,
-              customerPhone: customerPhone.trim() || undefined,
-              idempotencyKey,
-            }),
-          });
-          if (payRes.ok) {
-            toast.info("PhonePe UPI payment session generated");
-          }
-        } catch (payErr) {
-          console.warn("Payment session initiation warning:", payErr);
-        }
+        toast.info("Opening Razorpay secure checkout...");
+
+        await initiateRazorpayPayment({
+          amountPaise: Math.round(cartTotal * 100),
+          orderId: order.id,
+          tableNumber: selectedTable,
+          customerName: trimmedName,
+          customerPhone: cleanPhone,
+          onSuccess: async () => {
+            updatePaymentStatus(order.id, "PAID");
+            toast.success(`Order #${order.orderNumber} paid & confirmed!`, {
+              description: `Delivering directly to ${order.tableNumber}`,
+            });
+            onOpenChange(false);
+            router.push(`/order/${order.id}`);
+          },
+          onFailure: (errMsg) => {
+            toast.error(`Payment not completed: ${errMsg}`, {
+              description: `Your order #${order.orderNumber} is saved. You can pay at counter or retry.`,
+            });
+            onOpenChange(false);
+            router.push(`/order/${order.id}`);
+          },
+          onDismiss: () => {
+            toast.info(`Order #${order.orderNumber} placed (Pending Payment).`, {
+              description: "You can pay via Razorpay on the tracking page or at the counter.",
+            });
+            onOpenChange(false);
+            router.push(`/order/${order.id}`);
+          },
+        });
+        return;
       }
 
+      // Pay at counter flow
       toast.success(`Order #${order.orderNumber} placed successfully!`, {
         description: `Delivering directly to ${order.tableNumber}`,
       });
@@ -213,7 +239,35 @@ export function CheckoutModal({ open, onOpenChange }: CheckoutModalProps) {
               Choose Payment Option
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {/* Pay at Counter (Active / Recommended) */}
+              {/* Pay Online via Razorpay */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("upi_online")}
+                className={`flex flex-col p-3.5 rounded-xl border text-left transition-all relative ${
+                  paymentMethod === "upi_online"
+                    ? "border-primary bg-primary/5 ring-1 ring-primary shadow-xs"
+                    : "border-border/80 bg-card hover:bg-muted/40"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <CreditCard className="h-4 w-4 text-primary" />
+                    <span className="font-bold text-xs sm:text-sm text-foreground">Pay Online (Razorpay)</span>
+                  </div>
+                  {paymentMethod === "upi_online" ? (
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                  ) : (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-300">
+                      Fast
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  UPI (GPay, PhonePe, Paytm), Cards & NetBanking via Razorpay.
+                </p>
+              </button>
+
+              {/* Pay at Counter */}
               <button
                 type="button"
                 onClick={() => setPaymentMethod("counter")}
@@ -233,30 +287,7 @@ export function CheckoutModal({ open, onOpenChange }: CheckoutModalProps) {
                   )}
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Get a Token number. Confirm or pay at counter (Cash/Card/UPI) to begin cooking.
-                </p>
-              </button>
-
-              {/* UPI Online via PhonePe (Currently Unavailable) */}
-              <button
-                type="button"
-                onClick={() => {
-                  toast.info("PhonePe online payment is currently unavailable. Please select Pay at Counter.");
-                }}
-                className="flex flex-col p-3.5 rounded-xl border border-dashed border-border/80 bg-muted/40 text-left transition-all relative cursor-not-allowed opacity-75 hover:bg-muted/60"
-                title="PhonePe online payment is currently unavailable"
-              >
-                <div className="flex items-center justify-between w-full mb-1">
-                  <div className="flex items-center gap-1.5">
-                    <QrCode className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-bold text-xs sm:text-sm text-muted-foreground">Instant UPI (PhonePe)</span>
-                  </div>
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60">
-                    Currently Unavailable
-                  </span>
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  PhonePe gateway is temporarily unavailable. Please choose Pay at Counter.
+                  Get Token number. Pay via Cash, Card, or UPI at the billing desk.
                 </p>
               </button>
             </div>
@@ -316,11 +347,15 @@ export function CheckoutModal({ open, onOpenChange }: CheckoutModalProps) {
 
           {/* Verification / Preparation notice */}
           <div className="p-3 rounded-xl bg-secondary/50 border border-border/70 text-xs flex items-center gap-2.5">
-            <Ticket className="h-4 w-4 text-primary shrink-0" />
+            {paymentMethod === "upi_online" ? (
+              <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+            ) : (
+              <Ticket className="h-4 w-4 text-primary shrink-0" />
+            )}
             <p className="text-[11px] text-muted-foreground">
               {paymentMethod === "counter"
                 ? "You will get a Dining Token. Show it at the counter or pay cash/card so cooking can begin."
-                : "UPI payments are verified instantly. Your food is prepared directly for your table."}
+                : "Secure online payment powered by Razorpay. Orders are verified and routed to the kitchen instantly."}
             </p>
           </div>
 
@@ -334,12 +369,16 @@ export function CheckoutModal({ open, onOpenChange }: CheckoutModalProps) {
               {isSubmitting ? (
                 <>
                   <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Placing Order...</span>
+                  <span>Processing Checkout...</span>
                 </>
               ) : (
                 <>
                   <ShieldCheck className="h-4 w-4" />
-                  <span>Confirm & Place Order ({formatCurrency(cartTotal)})</span>
+                  <span>
+                    {paymentMethod === "upi_online"
+                      ? `Pay with Razorpay (${formatCurrency(cartTotal)})`
+                      : `Confirm & Pay at Counter (${formatCurrency(cartTotal)})`}
+                  </span>
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}

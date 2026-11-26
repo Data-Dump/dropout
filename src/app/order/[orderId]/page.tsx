@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { useRestaurant } from "@/lib/store/restaurant-store";
 import { Navbar } from "@/components/common/navbar";
 import { Footer } from "@/components/common/footer";
@@ -11,6 +10,7 @@ import { DietBadge } from "@/components/ui/diet-badge";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, normalizePaymentStatus } from "@/lib/utils";
 import { Order } from "@/types";
+import { initiateRazorpayPayment } from "@/lib/payments/razorpay-client";
 import {
   CheckCircle2,
   CheckCircle,
@@ -18,10 +18,10 @@ import {
   ArrowLeft,
   Share2,
   RefreshCw,
-  ExternalLink,
-  Smartphone,
   Coffee,
   Ticket,
+  CreditCard,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -148,6 +148,32 @@ export default function OrderTrackingPage() {
       if (!isAutoPoll) setIsVerifyingPayment(false);
     }
   }, [order, paymentSession, updatePaymentStatus]);
+
+  const handlePayWithRazorpay = async () => {
+    if (!order) return;
+    setIsVerifyingPayment(true);
+    try {
+      await initiateRazorpayPayment({
+        amountPaise: order.totalPaise || Math.round(order.total * 100),
+        orderId: order.id,
+        tableNumber: order.tableNumber,
+        customerName: order.customerName,
+        customerPhone: order.customerPhone,
+        onSuccess: async () => {
+          updatePaymentStatus(order.id, "PAID");
+          setRemoteOrder((prev) => (prev ? { ...prev, paymentStatus: "PAID" } : prev));
+          toast.success("Payment verified! Order marked as PAID.");
+        },
+        onFailure: (errMsg) => {
+          toast.error(`Payment not completed: ${errMsg}`);
+        },
+      });
+    } catch (err) {
+      console.error("Razorpay payment error:", err);
+    } finally {
+      setIsVerifyingPayment(false);
+    }
+  };
 
   const handleShare = () => {
     if (navigator.share) {
@@ -320,17 +346,17 @@ export default function OrderTrackingPage() {
           </div>
         )}
 
-        {/* 3. UPI Online Pending Payment Card */}
-        {!isPaid && !isCounter && (
+        {/* 3. Razorpay Online Payment Card (If Not Paid) */}
+        {!isPaid && (
           <div className="rounded-2xl border-2 border-primary/20 bg-card p-5 sm:p-6 shadow-md space-y-4">
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <div className="flex items-center gap-2.5">
                 <div className="h-9 w-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black text-sm">
-                  ₹
+                  <CreditCard className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-foreground">UPI Payment</h3>
-                  <p className="text-[11px] text-muted-foreground">Scan QR or pay via UPI App</p>
+                  <h3 className="text-sm font-black text-foreground">Razorpay Online Payment</h3>
+                  <p className="text-[11px] text-muted-foreground">UPI (GPay/PhonePe), Cards, NetBanking</p>
                 </div>
               </div>
               <Badge variant="amber" className="animate-pulse font-bold text-xs">
@@ -338,98 +364,43 @@ export default function OrderTrackingPage() {
               </Badge>
             </div>
 
-            {/* Dynamic QR Code & Intent Deep Links */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-5 pt-1">
-              {paymentSession?.qrImage ? (
-                <div className="flex flex-col items-center text-center space-y-1.5 p-3 rounded-2xl bg-[#FAF8F5] border border-border/70 shrink-0">
-                  <div className="relative w-44 h-44 rounded-xl overflow-hidden bg-white p-2 shadow-xs border">
-                    <Image
-                      src={paymentSession.qrImage}
-                      alt="UPI QR Code"
-                      fill
-                      unoptimized
-                      className="object-contain"
-                    />
-                  </div>
-                  <span className="text-[11px] font-bold text-foreground">
-                    Scan with any UPI App
-                  </span>
-                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                    <span>PhonePe</span> • <span>GPay</span> • <span>Paytm</span>
-                  </div>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
+              <div className="w-full sm:w-auto space-y-1">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs text-muted-foreground font-semibold">Total Payable:</span>
+                  <span className="text-xl font-black text-primary">{formatCurrency(order.total)}</span>
                 </div>
-              ) : (
-                <div className="w-full sm:w-52 p-4 flex flex-col items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-300 dark:border-amber-700/60 text-center text-xs space-y-2 shrink-0">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
-                    PhonePe Gateway Offline
-                  </span>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Online UPI payment is currently unavailable. Please show <strong>Token #{order.orderNumber}</strong> at the counter to settle your bill.
-                  </p>
-                </div>
-              )}
+                <p className="text-[11px] text-muted-foreground">
+                  Order Token: <strong className="font-mono text-foreground">{order.orderNumber}</strong> • {order.tableNumber}
+                </p>
+              </div>
 
-              {/* Action Buttons */}
-              <div className="flex-1 w-full space-y-2.5">
-                <div className="rounded-xl bg-secondary/40 p-3 text-xs space-y-1 border border-border/40">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total Bill:</span>
-                    <span className="font-black text-base text-primary">{formatCurrency(order.total)}</span>
-                  </div>
-                  <div className="flex justify-between text-[11px] text-muted-foreground">
-                    <span>Order Ref:</span>
-                    <span className="font-mono">{order.orderNumber}</span>
-                  </div>
-                </div>
-
-                {/* Mobile App Deep Links */}
-                {paymentSession?.intentLinks && (
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-                      Pay using Mobile App:
-                    </span>
-                    <div className="grid grid-cols-2 gap-2">
-                      <a
-                        href={paymentSession.intentLinks.phonepe}
-                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#5f259f] hover:bg-[#4d1d82] text-white text-xs font-bold shadow-xs transition-all"
-                      >
-                        <Smartphone className="h-3.5 w-3.5" />
-                        <span>PhonePe</span>
-                      </a>
-                      <a
-                        href={paymentSession.intentLinks.gpay}
-                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-border bg-card hover:bg-muted text-foreground text-xs font-bold shadow-xs transition-all"
-                      >
-                        <Smartphone className="h-3.5 w-3.5 text-blue-600" />
-                        <span>Google Pay</span>
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-                {/* Hosted Payment Page Redirect Link */}
-                {paymentSession?.paymentUrl && paymentSession.paymentUrl.startsWith("http") && (
-                  <a
-                    href={paymentSession.paymentUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-black shadow-xs hover:bg-primary/95 transition-all"
-                  >
-                    <span>Open PhonePe Payment Page</span>
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                )}
-
-                {/* Manual Status Check Button */}
+              <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-2.5 shrink-0">
                 <button
-                  onClick={() => handleVerifyPayment(false)}
+                  type="button"
+                  onClick={handlePayWithRazorpay}
                   disabled={isVerifyingPayment}
-                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-input bg-card hover:bg-secondary text-xs font-semibold text-foreground transition-all"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-primary hover:bg-primary/95 text-white font-black text-xs sm:text-sm shadow-md transition-all active:scale-95 disabled:opacity-60"
                 >
-                  <RefreshCw className={`h-3.5 w-3.5 ${isVerifyingPayment ? "animate-spin text-primary" : "text-muted-foreground"}`} />
-                  <span>{isVerifyingPayment ? "Checking status..." : "Refresh Payment Status"}</span>
+                  <ShieldCheck className="h-4 w-4" />
+                  <span>
+                    {isVerifyingPayment ? "Processing..." : `Pay with Razorpay (${formatCurrency(order.total)})`}
+                  </span>
                 </button>
               </div>
+            </div>
+
+            <div className="pt-2 border-t border-border/40 text-[11px] text-muted-foreground flex items-center justify-between flex-wrap gap-2">
+              <span>Prefer cash? Show Token <strong>#{order.orderNumber}</strong> at the billing counter.</span>
+              <button
+                type="button"
+                onClick={() => handleVerifyPayment(false)}
+                disabled={isVerifyingPayment}
+                className="inline-flex items-center gap-1 text-primary hover:underline font-semibold"
+              >
+                <RefreshCw className={`h-3 w-3 ${isVerifyingPayment ? "animate-spin" : ""}`} />
+                <span>Check Status</span>
+              </button>
             </div>
           </div>
         )}

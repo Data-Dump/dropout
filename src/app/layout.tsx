@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import Script from "next/script";
 import "./globals.css";
 import { RestaurantProvider } from "@/lib/store/restaurant-store";
 import { Toaster } from "sonner";
@@ -49,6 +50,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={geistSans.variable}>
       <body className="min-h-screen bg-background font-sans antialiased text-foreground">
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         <RestaurantProvider>
           {children}
           <Toaster

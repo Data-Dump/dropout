@@ -23,6 +23,7 @@
     "lucide-react": "^1.73.0",
     "next": "14.2.24",
     "qrcode.react": "^4.2.0",
+    "razorpay": "^2.9.8",
     "react": "^18",
     "react-dom": "^18",
     "sonner": "^2.0.8",

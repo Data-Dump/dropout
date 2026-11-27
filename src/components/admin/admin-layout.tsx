@@ -16,7 +16,6 @@ import {
   QrCode,
   CreditCard,
   BarChart3,
-  Users2,
   Settings,
   LogOut,
   Menu as MenuIcon,
@@ -50,7 +49,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: "qr_codes", label: "QR Codes", icon: QrCode },
   { id: "payments", label: "Payments", icon: CreditCard },
   { id: "reports", label: "Sales Reports", icon: BarChart3 },
-  { id: "staff", label: "Staff Management", icon: Users2 },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 

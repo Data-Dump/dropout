@@ -11,7 +11,6 @@ import { TableManagementView } from "@/components/admin/views/table-management-v
 import { QRCodesView } from "@/components/admin/views/qr-codes-view";
 import { PaymentsView } from "@/components/admin/views/payments-view";
 import { SalesReportsView } from "@/components/admin/views/sales-reports-view";
-import { StaffManagementView } from "@/components/admin/views/staff-management-view";
 import { SettingsView } from "@/components/admin/views/settings-view";
 import { QRGeneratorDialog } from "@/components/admin/qr-generator-dialog";
 import { useRestaurant } from "@/lib/store/restaurant-store";
@@ -51,7 +50,6 @@ export default function AdminDashboardPage() {
             {activeTab === "qr_codes" && <QRCodesView />}
             {activeTab === "payments" && <PaymentsView />}
             {activeTab === "reports" && <SalesReportsView />}
-            {activeTab === "staff" && <StaffManagementView />}
             {activeTab === "settings" && <SettingsView />}
           </>
         )}

@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
           payment_method: "upi_online",
           amount_paise: totalPaise,
           status: "pending",
-          provider: "phonepe",
+          provider: "razorpay",
           merchant_transaction_id: session.merchantTransactionId,
           raw_payload: {
             initiated_at: new Date().toISOString(),

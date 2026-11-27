@@ -90,7 +90,7 @@ export default function RefundAndCancellationPolicyPage() {
             </thead>
             <tbody className="divide-y divide-border text-muted-foreground">
               <tr>
-                <td className="p-3 font-semibold text-foreground">Online UPI / PhonePe</td>
+                <td className="p-3 font-semibold text-foreground">Online UPI / Razorpay</td>
                 <td className="p-3">Credited back to the original source UPI / Bank Account</td>
                 <td className="p-3">Initiated within 24–48 hours; credited in 5–7 banking days</td>
               </tr>

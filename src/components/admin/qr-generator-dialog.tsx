@@ -123,7 +123,7 @@ export function QRGeneratorDialog({
               {selectedTableNum}
             </div>
             <p className="text-[11px] text-muted-foreground mt-2">
-              Browse menu • UPI / PhonePe • Pay at Counter
+              Browse menu • Online UPI & Cards • Pay at Counter
             </p>
           </div>
         </div>

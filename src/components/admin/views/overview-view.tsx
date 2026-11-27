@@ -201,7 +201,7 @@ export function OverviewView({ onNavigateTab }: OverviewViewProps) {
                 </div>
                 <div>
                   <span className="font-bold text-xs text-foreground block">
-                    UPI (PhonePe / Apps)
+                    Online UPI (Razorpay)
                   </span>
                   <span className="text-[10px] text-muted-foreground">Online QR Settlement</span>
                 </div>

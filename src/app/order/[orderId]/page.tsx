@@ -113,7 +113,7 @@ export default function OrderTrackingPage() {
           }
         }
       } catch (err) {
-        console.warn("Could not initiate PhonePe payment session:", err);
+        console.warn("Could not initiate online payment session:", err);
       }
     }
 
@@ -137,7 +137,7 @@ export default function OrderTrackingPage() {
         if (data?.status === "PAID") {
           updatePaymentStatus(order.id, "PAID");
           setRemoteOrder((prev) => (prev ? { ...prev, paymentStatus: "PAID" } : prev));
-          toast.success("Payment verified successfully via PhonePe!");
+          toast.success("Payment verified successfully via Razorpay!");
         } else if (!isAutoPoll) {
           toast.info("Payment is still pending authorization.");
         }

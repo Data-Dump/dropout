@@ -119,9 +119,8 @@ export function PaymentsView() {
 
   // Combined transactions from DB or mapped from store, enriched with item details
   const allTransactions: LedgerPayment[] = useMemo(() => {
-    // If successfully queried from Supabase database, use DB records exclusively!
-    // Never fall back to stale mock/offline orders once DB is queried.
-    if (hasLoadedFromDb) {
+    // If successfully queried from Supabase database and has payments, use DB records enriched with store
+    if (hasLoadedFromDb && dbPayments.length > 0) {
       return dbPayments.map((p) => {
         let items: LedgerItem[] = (p.items || []).map((it) => ({
           id: it.id,
@@ -132,31 +131,36 @@ export function PaymentsView() {
           specialInstructions: it.specialInstructions,
         }));
 
+        const matchedOrder = orders.find(
+          (o) => o.id === p.orderId || o.orderNumber === p.orderNumber
+        );
+
         // Fallback to store orders if dbPayments row lacks items
-        if (items.length === 0) {
-          const matchedOrder = orders.find(
-            (o) => o.id === p.orderId || o.orderNumber === p.orderNumber
-          );
-          if (matchedOrder && matchedOrder.items) {
-            items = matchedOrder.items.map((oi) => ({
-              id: oi.id,
-              name: oi.name,
-              quantity: oi.quantity,
-              price: oi.price,
-              dietType: oi.dietType,
-              specialInstructions: oi.specialInstructions,
-            }));
-          }
+        if (items.length === 0 && matchedOrder && matchedOrder.items) {
+          items = matchedOrder.items.map((oi) => ({
+            id: oi.id,
+            name: oi.name,
+            quantity: oi.quantity,
+            price: oi.price,
+            dietType: oi.dietType,
+            specialInstructions: oi.specialInstructions,
+          }));
         }
+
+        // SYNC STATUS: If the matching order in orders store is PAID, this payment is authoritative PAID!
+        const isOrderPaid = matchedOrder && normalizePaymentStatus(matchedOrder.paymentStatus) === "PAID";
+        const effectiveStatus: PaymentStatus = isOrderPaid ? "PAID" : normalizePaymentStatus(p.status);
 
         return {
           ...p,
+          status: effectiveStatus,
+          provider: "razorpay",
           items,
         };
       });
     }
 
-    // When NOT loaded from DB yet, exclude legacy mock tickets
+    // When NOT loaded from DB yet, or if DB is empty, use active store orders
     const legacyMockNumbers = new Set([
       "DRP-2758", "DRP-8063", "DRP-2908", "DRP-2421", "DRP-9579", "DRP-7329", "DRP-9855"
     ]);
@@ -173,7 +177,7 @@ export function PaymentsView() {
       amountPaise: Math.round(o.total * 100),
       amount: o.total,
       status: normalizePaymentStatus(o.paymentStatus),
-      provider: "phonepe",
+      provider: "razorpay",
       merchantTransactionId: o.idempotencyKey ? `MT_${o.orderNumber}_${o.idempotencyKey.slice(0, 8)}` : undefined,
       createdAt: o.createdAt,
       items: (o.items || []).map((oi) => ({
@@ -330,33 +334,64 @@ export function PaymentsView() {
   }, [allTransactions]);
 
   const handleUpdatePayment = async (orderId: string, status: PaymentStatus) => {
-    await updatePaymentStatus(orderId, status);
-    setDbPayments((prev) =>
-      prev.map((p) => (p.orderId === orderId ? { ...p, status } : p))
-    );
-    toast.success(`Payment status marked as ${status}`);
-  };
-
-  const handleUpdateGroupPayment = async (orderIds: string[], status: PaymentStatus, tableNumber?: string) => {
     try {
-      for (const id of orderIds) {
-        await updatePaymentStatus(id, status);
-      }
+      await updatePaymentStatus(orderId, status);
       setDbPayments((prev) =>
-        prev.map((p) => (orderIds.includes(p.orderId) ? { ...p, status } : p))
+        prev.map((p) =>
+          p.orderId === orderId || p.orderNumber === orderId ? { ...p, status } : p
+        )
       );
-      toast.success(
-        orderIds.length > 1
-          ? `Settled combined tab for ${tableNumber || "Table"} (${orderIds.length} orders marked as ${status})`
-          : `Payment status marked as ${status}`
-      );
+      try {
+        await fetch("/api/payments", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", "x-staff-pin": "1234" },
+          body: JSON.stringify({ orderId, status }),
+        });
+      } catch {
+        // non-blocking
+      }
+      toast.success(`Payment status marked as ${status}`);
+      fetchPayments();
     } catch (err) {
       console.error(err);
       toast.error("Failed to update payment status");
     }
   };
 
-  const handleRecheckPhonePe = async (txnId?: string, orderId?: string) => {
+  const handleUpdateGroupPayment = async (orderIds: string[], status: PaymentStatus, tableNumber?: string) => {
+    try {
+      for (const id of orderIds) {
+        await updatePaymentStatus(id, status);
+        try {
+          await fetch("/api/payments", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", "x-staff-pin": "1234" },
+            body: JSON.stringify({ orderId: id, status }),
+          });
+        } catch {
+          // non-blocking
+        }
+      }
+      setDbPayments((prev) =>
+        prev.map((p) =>
+          orderIds.includes(p.orderId) || orderIds.includes(p.orderNumber)
+            ? { ...p, status }
+            : p
+        )
+      );
+      toast.success(
+        orderIds.length > 1
+          ? `Settled combined tab for ${tableNumber || "Table"} (${orderIds.length} orders marked as ${status})`
+          : `Payment status marked as ${status}`
+      );
+      fetchPayments();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update payment status");
+    }
+  };
+
+  const handleRecheckRazorpay = async (txnId?: string, orderId?: string) => {
     if (!txnId && !orderId) return;
     setCheckingTxnId(txnId || orderId || "");
 
@@ -366,15 +401,31 @@ export function PaymentsView() {
       const data = await res.json();
 
       if (data?.status === "PAID") {
-        if (orderId) updatePaymentStatus(orderId, "PAID");
+        if (orderId) {
+          updatePaymentStatus(orderId, "PAID");
+          try {
+            await fetch("/api/payments", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json", "x-staff-pin": "1234" },
+              body: JSON.stringify({ orderId, status: "PAID" }),
+            });
+          } catch {
+            // non-blocking
+          }
+        }
+        setDbPayments((prev) =>
+          prev.map((p) =>
+            p.orderId === orderId || p.orderNumber === orderId ? { ...p, status: "PAID" } : p
+          )
+        );
         fetchPayments();
-        toast.success("PhonePe verified payment as PAID & SETTLED!");
+        toast.success("Razorpay verified payment as PAID & SETTLED!");
       } else {
         toast.info(`Provider status: ${data?.status || "PENDING"} - ${data?.message || "Awaiting authorization"}`);
       }
     } catch (e) {
       console.error(e);
-      toast.error("Failed to query PhonePe Status API");
+      toast.error("Failed to query Razorpay Status API");
     } finally {
       setCheckingTxnId(null);
     }
@@ -404,7 +455,7 @@ export function PaymentsView() {
         <div className="rounded-2xl border border-border/80 bg-card p-4 space-y-1 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-              UPI (PhonePe Gateway)
+              UPI (Razorpay Gateway)
             </span>
             <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
               <QrCode className="h-4 w-4" />
@@ -413,7 +464,7 @@ export function PaymentsView() {
           <div className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
             {formatCurrency(metrics.upiCollected)}
           </div>
-          <span className="text-[11px] text-muted-foreground">Zero-commission online UPI</span>
+          <span className="text-[11px] text-muted-foreground">Online UPI & Cards</span>
         </div>
 
         {/* Counter Payments */}
@@ -470,7 +521,7 @@ export function PaymentsView() {
               }`}
             >
               <QrCode className="h-3 w-3 text-primary" />
-              <span>PhonePe UPI</span>
+              <span>Razorpay UPI</span>
             </button>
             <button
               onClick={() => setMethodFilter("counter")}
@@ -708,7 +759,7 @@ export function PaymentsView() {
                             {group.paymentMethod === "upi_online" ? (
                               <>
                                 <QrCode className="h-3 w-3 text-primary" />
-                                <span>PhonePe UPI</span>
+                                <span>Razorpay UPI</span>
                               </>
                             ) : (
                               <>
@@ -773,26 +824,24 @@ export function PaymentsView() {
                               </button>
                             )}
 
-                            {/* Standalone Counter pending: Settle single order */}
-                            {!group.isGroup &&
-                              group.paymentMethod === "counter" &&
-                              paySt !== "PAID" && (
-                                <button
-                                  onClick={() =>
-                                    handleUpdatePayment(group.orderIds[0], "PAID")
-                                  }
-                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-2xs"
-                                >
-                                  Mark Paid at Desk
-                                </button>
-                              )}
+                            {/* Standalone pending: Settle single order */}
+                            {!group.isGroup && paySt !== "PAID" && (
+                              <button
+                                onClick={() =>
+                                  handleUpdatePayment(group.orderIds[0], "PAID")
+                                }
+                                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-2xs cursor-pointer"
+                              >
+                                Mark Paid
+                              </button>
+                            )}
 
-                            {/* PhonePe UPI pending: Provider status recheck */}
+                            {/* Razorpay UPI pending: Provider status recheck */}
                             {group.paymentMethod === "upi_online" &&
                               paySt !== "PAID" && (
                                 <button
                                   onClick={() =>
-                                    handleRecheckPhonePe(
+                                    handleRecheckRazorpay(
                                       group.merchantTransactionId,
                                       group.orderIds[0]
                                     )
@@ -800,8 +849,8 @@ export function PaymentsView() {
                                   disabled={
                                     checkingTxnId === group.merchantTransactionId
                                   }
-                                  className="px-2.5 py-1 rounded-lg border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[10px] flex items-center gap-1"
-                                  title="Query PhonePe Status API directly"
+                                  className="px-2.5 py-1 rounded-lg border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[10px] flex items-center gap-1 cursor-pointer"
+                                  title="Query Razorpay Status directly"
                                 >
                                   <RefreshCw
                                     className={`h-3 w-3 ${
@@ -811,7 +860,7 @@ export function PaymentsView() {
                                         : ""
                                     }`}
                                   />
-                                  <span>Check PhonePe</span>
+                                  <span>Check Razorpay</span>
                                 </button>
                               )}
 

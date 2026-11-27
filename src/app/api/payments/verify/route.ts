@@ -90,6 +90,13 @@ export async function GET(req: NextRequest) {
 
     // If already marked PAID in database, return current status
     if (paymentRecord?.status?.toUpperCase() === "PAID" || orderRecord?.payment_status?.toUpperCase() === "PAID") {
+      if (supabaseAdmin && paymentRecord?.id && paymentRecord?.status?.toUpperCase() !== "PAID") {
+        await supabaseAdmin.from("payments").update({
+          status: "paid",
+          settled_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq("id", paymentRecord.id);
+      }
       return NextResponse.json({
         verified: true,
         status: "PAID",

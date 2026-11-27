@@ -592,7 +592,7 @@ export async function POST(req: NextRequest) {
               payment_method: paymentMethod,
               amount_paise: totalPaise,
               status: "PENDING",
-              provider: "phonepe",
+              provider: "razorpay",
             });
 
             if (tableId) {
@@ -796,6 +796,23 @@ export async function PATCH(req: NextRequest) {
       console.warn("Could not update order in Supabase:", error.message);
       // Still return success for local mock orders so UI buttons remain responsive
       return NextResponse.json({ success: true, warning: error.message, updates });
+    }
+
+    // Also sync the payments table so payments ledger immediately reflects status
+    if (data?.id && paymentStatus) {
+      const canonicalPaymentStatus = normalizePaymentStatus(paymentStatus);
+      try {
+        await supabaseAdmin
+          .from("payments")
+          .update({
+            status: canonicalPaymentStatus.toLowerCase(),
+            settled_at: canonicalPaymentStatus === "PAID" ? new Date().toISOString() : null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("order_id", data.id);
+      } catch (pErr) {
+        console.warn("Could not sync payments status:", pErr);
+      }
     }
 
     return NextResponse.json({

@@ -45,7 +45,7 @@ export default function PrivacyPolicyPage() {
             <strong className="text-foreground">Order & Transaction Logs:</strong> Items ordered, subtotal, billing timestamps, order progress status, payment method selected (UPI or Pay at Counter), and payment gateway reference tokens.
           </li>
           <li>
-            <strong className="text-foreground">What We Do NOT Collect:</strong> We never collect, store, or process your credit/debit card numbers, CVVs, netbanking passwords, or UPI PINs. All online payments are securely redirected to and processed by authorized third-party payment aggregators (e.g. PhonePe).
+            <strong className="text-foreground">What We Do NOT Collect:</strong> We never collect, store, or process your credit/debit card numbers, CVVs, netbanking passwords, or UPI PINs. All online payments are securely redirected to and processed by authorized third-party payment aggregators (e.g. Razorpay).
           </li>
         </ul>
       </section>

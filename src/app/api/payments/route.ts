@@ -79,6 +79,7 @@ export async function GET(req: NextRequest) {
           table_number,
           customer_name,
           customer_phone,
+          payment_status,
           order_items (
             id,
             item_name,
@@ -104,6 +105,7 @@ export async function GET(req: NextRequest) {
         table_number?: string;
         customer_name?: string | null;
         customer_phone?: string | null;
+        payment_status?: string | null;
         order_items?: Array<{
           id: string;
           item_name: string;
@@ -123,6 +125,11 @@ export async function GET(req: NextRequest) {
         specialInstructions: it.special_instructions || undefined,
       }));
 
+      const ordPaymentStatus = ord.payment_status ? normalizePaymentStatus(ord.payment_status) : null;
+      const paymentRowStatus = normalizePaymentStatus(row.status);
+      const resolvedStatus: PaymentStatus =
+        ordPaymentStatus === "PAID" || paymentRowStatus === "PAID" ? "PAID" : paymentRowStatus;
+
       return {
         id: row.id,
         orderId: row.order_id,
@@ -133,8 +140,8 @@ export async function GET(req: NextRequest) {
         paymentMethod: row.payment_method as PaymentMethod,
         amountPaise: Number(row.amount_paise),
         amount: paiseToRupees(Number(row.amount_paise)),
-        status: normalizePaymentStatus(row.status),
-        provider: row.provider || "phonepe",
+        status: resolvedStatus,
+        provider: row.provider || "razorpay",
         merchantTransactionId: row.merchant_transaction_id || undefined,
         providerReferenceId: row.provider_reference_id || undefined,
         settledAt: row.settled_at || undefined,
@@ -147,6 +154,64 @@ export async function GET(req: NextRequest) {
   } catch (err: unknown) {
     console.error("Payments API Error:", err);
     return NextResponse.json({ error: safeServerError(err, "Failed to fetch payments history") }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    if (isDirectBrowserDocumentRequest(req)) {
+      return directBrowserBlockedResponse();
+    }
+
+    const session = getStaffSessionFromRequest(req);
+    if (!session) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { orderId, paymentId, status } = body;
+
+    if (!orderId && !paymentId) {
+      return NextResponse.json({ error: "orderId or paymentId is required" }, { status: 400 });
+    }
+
+    const canonicalStatus = normalizePaymentStatus(status || "PAID");
+    const supabaseAdmin = getSupabaseAdminClient();
+
+    if (supabaseAdmin) {
+      if (paymentId) {
+        await supabaseAdmin.from("payments").update({
+          status: canonicalStatus.toLowerCase(),
+          settled_at: canonicalStatus === "PAID" ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString(),
+        }).eq("id", paymentId);
+      }
+
+      if (orderId) {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
+        let foundOrderId = orderId;
+        if (!isUuid) {
+          const { data: ord } = await supabaseAdmin.from("orders").select("id").eq("order_number", orderId).maybeSingle();
+          if (ord?.id) foundOrderId = ord.id;
+        }
+
+        await supabaseAdmin.from("payments").update({
+          status: canonicalStatus.toLowerCase(),
+          settled_at: canonicalStatus === "PAID" ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString(),
+        }).eq("order_id", foundOrderId);
+
+        await supabaseAdmin.from("orders").update({
+          payment_status: canonicalStatus,
+          updated_at: new Date().toISOString(),
+        }).eq("id", foundOrderId);
+      }
+    }
+
+    return NextResponse.json({ success: true, status: canonicalStatus });
+  } catch (err: unknown) {
+    console.error("Payment PATCH error:", err);
+    return NextResponse.json({ error: safeServerError(err) }, { status: 500 });
   }
 }
 

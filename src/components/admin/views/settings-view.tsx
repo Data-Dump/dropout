@@ -134,36 +134,36 @@ export function SettingsView() {
         </div>
       </div>
 
-      {/* UPIPay / PhonePe Gateway Config */}
+      {/* Razorpay Gateway Config */}
       <div className="rounded-2xl border border-border/80 bg-card p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-border/60">
           <div className="flex items-center gap-2.5">
             <QrCode className="h-5 w-5 text-primary" />
             <h4 className="text-sm font-black text-foreground">
-              UPI Gateway Integration (PhonePe UPIPay)
+              Payment Gateway Integration (Razorpay)
             </h4>
           </div>
-          <Badge variant="stone" className="font-bold text-[10px] bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60">
-            Currently Unavailable
+          <Badge variant="stone" className="font-bold text-[10px] bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60">
+            Active
           </Badge>
         </div>
 
         <div className="space-y-2 text-xs">
           <p className="text-muted-foreground leading-relaxed">
-            PhonePe online checkout is currently marked <strong>Unavailable</strong>. All dining orders are currently directed to <strong>Pay at Counter</strong>.
+            Razorpay online checkout is configured for table self-ordering. Accepts UPI (GPay, PhonePe, Paytm), Credit/Debit Cards, and NetBanking.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <div className="p-3 rounded-xl bg-secondary/40 border border-border/50">
               <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">
-                Online Gateway Status
+                Online Gateway Provider
               </span>
-              <span className="font-bold text-amber-700 dark:text-amber-400">Temporarily Offline</span>
+              <span className="font-bold text-emerald-700 dark:text-emerald-400">Razorpay (Active)</span>
             </div>
             <div className="p-3 rounded-xl bg-secondary/40 border border-border/50">
               <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">
                 Active Order Mode
               </span>
-              <span className="font-bold text-foreground">Pay at Counter (Dining Token)</span>
+              <span className="font-bold text-foreground">Razorpay Online + Pay at Counter</span>
             </div>
           </div>
         </div>

@@ -435,7 +435,7 @@ export function SalesReportsView() {
           <div>
             <h4 className="text-base font-black text-foreground tracking-tight flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-primary" />
-              <span>Payment Channel Reconciliation: UPI (PhonePe) vs Pay at Counter</span>
+              <span>Payment Channel Reconciliation: Online (Razorpay) vs Pay at Counter</span>
             </h4>
             <p className="text-xs text-muted-foreground">
               Direct verification of settled digital UPI transactions against counter cash and card registers.
@@ -452,7 +452,7 @@ export function SalesReportsView() {
             <div
               className="h-full bg-primary transition-all duration-500"
               style={{ width: `${upiPercent}%` }}
-              title={`PhonePe UPI: ${upiPercent}%`}
+              title={`Razorpay Online: ${upiPercent}%`}
             />
             <div
               className="h-full bg-stone-500 transition-all duration-500"
@@ -463,7 +463,7 @@ export function SalesReportsView() {
           <div className="flex items-center justify-between text-xs font-bold text-muted-foreground">
             <span className="flex items-center gap-1.5 text-primary">
               <span className="h-2 w-2 rounded-full bg-primary" />
-              <span>UPI Online ({upiPercent}%)</span>
+              <span>Razorpay Online ({upiPercent}%)</span>
             </span>
             <span className="flex items-center gap-1.5 text-stone-600 dark:text-stone-300">
               <span className="h-2 w-2 rounded-full bg-stone-500" />
@@ -479,7 +479,7 @@ export function SalesReportsView() {
             <div className="flex items-center justify-between">
               <span className="font-bold text-sm text-foreground flex items-center gap-1.5">
                 <QrCode className="h-4 w-4 text-primary" />
-                <span>PhonePe UPI (0% MDR)</span>
+                <span>Razorpay Online (UPI & Cards)</span>
               </span>
               <Badge variant="default" className="text-[10px] font-mono">
                 {paymentBreakdown.upi.count} orders

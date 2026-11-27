@@ -829,15 +829,43 @@ export async function DELETE(req: NextRequest) {
     }
 
     if (clearAll) {
-      await supabaseAdmin.from("order_items").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabaseAdmin.from("payments").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabaseAdmin.from("orders").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      // 1. Fetch all payment IDs and purge them by explicit ID list
+      const { data: allP } = await supabaseAdmin.from("payments").select("id");
+      const pIds = (allP || []).map((x: { id: string }) => x.id);
+      let pErr = null;
+      if (pIds.length > 0) {
+        const { error } = await supabaseAdmin.from("payments").delete().in("id", pIds);
+        pErr = error;
+      }
+
+      // 2. Fetch all order IDs and purge order_items and orders
+      const { data: allO } = await supabaseAdmin.from("orders").select("id");
+      const oIds = (allO || []).map((x: { id: string }) => x.id);
+      let oErr = null;
+      if (oIds.length > 0) {
+        await supabaseAdmin.from("order_items").delete().in("order_id", oIds);
+        const { error } = await supabaseAdmin.from("orders").delete().in("id", oIds);
+        oErr = error;
+      }
+
+      // 3. Broad cleanup for any remaining rows
+      await supabaseAdmin.from("order_items").delete().not("id", "is", null);
+      await supabaseAdmin.from("payments").delete().not("id", "is", null);
+      await supabaseAdmin.from("orders").delete().not("id", "is", null);
+
       await supabaseAdmin
         .from("restaurant_tables")
         .update({ status: "available" })
-        .neq("id", "00000000-0000-0000-0000-000000000000");
+        .not("id", "is", null);
 
-      return NextResponse.json({ success: true, message: "All orders and payments purged successfully." });
+      return NextResponse.json({
+        success: true,
+        message: "All orders and payments purged successfully.",
+        purgedPayments: pIds.length,
+        purgedOrders: oIds.length,
+        paymentError: pErr?.message || null,
+        orderError: oErr?.message || null,
+      });
     }
 
     if (orderId) {

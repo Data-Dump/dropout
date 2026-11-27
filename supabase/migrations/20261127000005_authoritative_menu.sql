@@ -6,10 +6,8 @@ BEGIN;
   -- payments, profiles, and restaurant_tables.
   -- ==============================================================================
 
-  DELETE FROM public.menu_addons;
-  DELETE FROM public.menu_variants;
-  DELETE FROM public.menu_items;
-  DELETE FROM public.menu_categories;
+  -- Clean up legacy standalone Cold Coffee Large (consolidated into Cold Coffee variants)
+  DELETE FROM public.menu_items WHERE id = '68671527-5dd2-5561-8de8-2e1efe56c23e';
 
   INSERT INTO public.menu_categories (id, name, slug, display_order, is_active) VALUES
     ('deabdbe3-1775-521e-972f-56ea077a5c6c', 'Fries & Starters', 'fries-starters', 1, TRUE),

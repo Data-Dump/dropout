@@ -198,7 +198,7 @@ export function StaffManagementView() {
               <input
                 type="text"
                 required
-                placeholder="e.g. Rahul Verma"
+                placeholder="e.g. Kaushal Malvi"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full rounded-xl border border-input bg-background p-2.5 text-xs focus:ring-2 focus:ring-primary"

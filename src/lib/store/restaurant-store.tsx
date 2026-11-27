@@ -121,9 +121,9 @@ const LOCAL_STORAGE_KEYS = {
 const INITIAL_STAFF: StaffMember[] = [
   {
     id: "stf-1",
-    name: "Rahul Verma",
+    name: "Kaushal Malvi",
     role: "Manager",
-    phone: "+91 98765 43210",
+    phone: "+91 96446 79988",
     pin: "1234",
     status: "on_duty",
     joinedDate: "2024-01-15",
@@ -251,7 +251,22 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
       if (storedCapacities) setTableCapacities(JSON.parse(storedCapacities));
 
       const storedStaff = localStorage.getItem(LOCAL_STORAGE_KEYS.STAFF);
-      if (storedStaff) setStaff(JSON.parse(storedStaff));
+      if (storedStaff) {
+        try {
+          const parsed = JSON.parse(storedStaff);
+          if (Array.isArray(parsed)) {
+            const sanitized = parsed.map((s: StaffMember) =>
+              s.name.includes("Rahul Verma")
+                ? { ...s, name: "Kaushal Malvi", phone: "+91 96446 79988" }
+                : s
+            );
+            setStaff(sanitized);
+            localStorage.setItem(LOCAL_STORAGE_KEYS.STAFF, JSON.stringify(sanitized));
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       const storedAuth = localStorage.getItem(LOCAL_STORAGE_KEYS.ADMIN_AUTH);
       if (storedAuth !== null) setIsAdminAuthenticated(storedAuth === "true");

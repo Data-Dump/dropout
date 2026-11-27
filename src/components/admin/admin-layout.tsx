@@ -260,9 +260,9 @@ export function AdminLayout({ activeTab, onTabChange, children }: AdminLayoutPro
                 <span className="text-[11px] font-bold text-foreground">
                   {adminRole === "kitchen"
                     ? "Kitchen Station"
-                    : currentStaff
-                    ? `${currentStaff.name} (SuperAdmin)`
-                    : "SuperAdmin"}
+                    : currentStaff && currentStaff.name !== "Rahul Verma"
+                    ? `${currentStaff.name} (Admin)`
+                    : "Kaushal Malvi (Admin)"}
                 </span>
               </div>
               <span className="text-[10px] text-muted-foreground font-semibold">

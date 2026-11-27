@@ -149,3 +149,65 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: safeServerError(err, "Failed to fetch payments history") }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    if (isDirectBrowserDocumentRequest(req)) {
+      return directBrowserBlockedResponse();
+    }
+
+    const session = getStaffSessionFromRequest(req);
+    if (!session) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const supabaseAdmin = getSupabaseAdminClient();
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
+    }
+
+    // 1. Fetch all payment rows and their associated order IDs
+    const { data: payments, error: selErr } = await supabaseAdmin.from("payments").select("id, order_id");
+    if (selErr) {
+      console.error("Error selecting payments for deletion:", selErr);
+      return NextResponse.json({ error: selErr.message }, { status: 500 });
+    }
+
+    const paymentIds = (payments || []).map((p: { id: string }) => p.id);
+    const paymentOrderIds = (payments || []).map((p: { order_id: string }) => p.order_id).filter(Boolean);
+
+    // 2. Fetch all orders
+    const { data: allOrders } = await supabaseAdmin.from("orders").select("id");
+    const allOrderIds = Array.from(new Set([...paymentOrderIds, ...(allOrders || []).map((o: { id: string }) => o.id)]));
+
+    let delPaymentErr = null;
+    if (paymentIds.length > 0) {
+      const { error } = await supabaseAdmin.from("payments").delete().in("id", paymentIds);
+      delPaymentErr = error;
+    }
+
+    let delOrderErr = null;
+    if (allOrderIds.length > 0) {
+      await supabaseAdmin.from("order_items").delete().in("order_id", allOrderIds);
+      const { error } = await supabaseAdmin.from("orders").delete().in("id", allOrderIds);
+      delOrderErr = error;
+    }
+
+    // Reset table occupancy
+    await supabaseAdmin
+      .from("restaurant_tables")
+      .update({ status: "available" })
+      .not("id", "is", null);
+
+    return NextResponse.json({
+      success: true,
+      foundPayments: paymentIds.length,
+      foundOrders: allOrderIds.length,
+      paymentError: delPaymentErr?.message || null,
+      orderError: delOrderErr?.message || null,
+    });
+  } catch (err: unknown) {
+    console.error("Delete Payments Error:", err);
+    return NextResponse.json({ error: safeServerError(err, "Failed to purge payments") }, { status: 500 });
+  }
+}

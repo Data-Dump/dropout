@@ -156,7 +156,13 @@ export function PaymentsView() {
       });
     }
 
-    return orders.map((o) => ({
+    // When NOT loaded from DB yet, exclude legacy mock tickets
+    const legacyMockNumbers = new Set([
+      "DRP-2758", "DRP-8063", "DRP-2908", "DRP-2421", "DRP-9579", "DRP-7329", "DRP-9855"
+    ]);
+    const cleanOrders = orders.filter((o) => !legacyMockNumbers.has(o.orderNumber));
+
+    return cleanOrders.map((o) => ({
       id: `p-${o.id}`,
       orderId: o.id,
       orderNumber: o.orderNumber,
@@ -502,27 +508,38 @@ export function PaymentsView() {
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin text-primary" : ""}`} />
           </button>
 
-          {/* Purge Local Mock Cache Button */}
+          {/* Purge / Reset Ledger Button */}
           <button
             onClick={async () => {
-              if (window.confirm("Purge old offline/mock test orders from browser storage and resync fresh from database?")) {
+              if (window.confirm("Purge all test payments and orders from database and reset ledger to zero?")) {
                 try {
                   localStorage.removeItem("dropout_pos_orders");
                 } catch {
                   // ignore
                 }
+                try {
+                  const delRes = await fetch("/api/payments", {
+                    method: "DELETE",
+                    headers: { "x-staff-pin": "1234" },
+                  });
+                  if (delRes.ok) {
+                    toast.success("Database ledger purged successfully!");
+                  }
+                } catch (e) {
+                  console.error("Purge API call failed:", e);
+                }
                 await clearAllOrders();
                 setDbPayments([]);
-                setHasLoadedFromDb(false);
+                setHasLoadedFromDb(true);
                 await fetchPayments();
-                toast.success("Local test orders purged! Synced fresh with database.");
+                toast.success("Ledger reset clean! Ready for fresh orders.");
               }
             }}
-            className="px-2.5 py-1.5 rounded-xl border border-rose-200/80 bg-rose-50/70 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
-            title="Clear old test orders stored in browser and resync from Supabase"
+            className="px-2.5 py-1.5 rounded-xl border border-rose-200/80 bg-rose-50/70 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Reset ledger to zero and delete all test orders from database"
           >
             <Trash2 className="h-3.5 w-3.5 text-rose-600" />
-            <span className="hidden sm:inline">Purge Local Mock Cache</span>
+            <span className="hidden sm:inline">Reset Ledger (Zero)</span>
           </button>
         </div>
 

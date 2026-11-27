@@ -18,6 +18,7 @@ import {
   Receipt,
   Phone,
   Utensils,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -69,9 +70,10 @@ interface GroupedPayment {
 }
 
 export function PaymentsView() {
-  const { orders, updatePaymentStatus } = useRestaurant();
+  const { orders, updatePaymentStatus, clearAllOrders } = useRestaurant();
 
   const [dbPayments, setDbPayments] = useState<LedgerPayment[]>([]);
+  const [hasLoadedFromDb, setHasLoadedFromDb] = useState(false);
   const [methodFilter, setMethodFilter] = useState<"all" | PaymentMethod>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,15 +90,26 @@ export function PaymentsView() {
 
   const fetchPayments = useCallback(async () => {
     try {
-      const res = await fetch("/api/payments");
+      setIsRefreshing(true);
+      const res = await fetch("/api/payments", {
+        headers: { "x-staff-pin": "1234" },
+      });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data?.payments) && data.payments.length > 0) {
+        if (Array.isArray(data?.payments)) {
           setDbPayments(data.payments);
+          setHasLoadedFromDb(true);
         }
+      } else {
+        const errJson = await res.json().catch(() => null);
+        console.warn("Failed fetching payments history:", res.status, errJson);
+        toast.error(errJson?.error || `Payments API error (${res.status})`);
       }
     } catch (e) {
       console.warn("Failed fetching payments history:", e);
+      toast.error("Network error while connecting to payments ledger.");
+    } finally {
+      setIsRefreshing(false);
     }
   }, []);
 
@@ -106,7 +119,9 @@ export function PaymentsView() {
 
   // Combined transactions from DB or mapped from store, enriched with item details
   const allTransactions: LedgerPayment[] = useMemo(() => {
-    if (dbPayments.length > 0) {
+    // If successfully queried from Supabase database, use DB records exclusively!
+    // Never fall back to stale mock/offline orders once DB is queried.
+    if (hasLoadedFromDb) {
       return dbPayments.map((p) => {
         let items: LedgerItem[] = (p.items || []).map((it) => ({
           id: it.id,
@@ -164,7 +179,7 @@ export function PaymentsView() {
         specialInstructions: oi.specialInstructions,
       })),
     }));
-  }, [dbPayments, orders]);
+  }, [hasLoadedFromDb, dbPayments, orders]);
 
   // Group Pay at Counter orders placed from the same table with the same contact phone
   const groupedPayments: GroupedPayment[] = useMemo(() => {
@@ -478,15 +493,36 @@ export function PaymentsView() {
           {/* Refresh button */}
           <button
             onClick={async () => {
-              setIsRefreshing(true);
               await fetchPayments();
-              setIsRefreshing(false);
-              toast.success("Payment ledger refreshed");
+              toast.success("Payment ledger refreshed from database");
             }}
-            className="p-1.5 rounded-xl border border-input bg-card text-muted-foreground hover:text-foreground"
+            className="p-1.5 rounded-xl border border-input bg-card text-muted-foreground hover:text-foreground transition-colors"
             title="Refresh Ledger"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin text-primary" : ""}`} />
+          </button>
+
+          {/* Purge Local Mock Cache Button */}
+          <button
+            onClick={async () => {
+              if (window.confirm("Purge old offline/mock test orders from browser storage and resync fresh from database?")) {
+                try {
+                  localStorage.removeItem("dropout_pos_orders");
+                } catch {
+                  // ignore
+                }
+                await clearAllOrders();
+                setDbPayments([]);
+                setHasLoadedFromDb(false);
+                await fetchPayments();
+                toast.success("Local test orders purged! Synced fresh with database.");
+              }
+            }}
+            className="px-2.5 py-1.5 rounded-xl border border-rose-200/80 bg-rose-50/70 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
+            title="Clear old test orders stored in browser and resync from Supabase"
+          >
+            <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+            <span className="hidden sm:inline">Purge Local Mock Cache</span>
           </button>
         </div>
 

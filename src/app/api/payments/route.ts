@@ -98,7 +98,8 @@ export async function GET(req: NextRequest) {
     }
 
     const formatted: AdminPaymentTransaction[] = (paymentsData || []).map((row) => {
-      const ord = (row.orders as unknown as {
+      const rawOrd = row.orders;
+      const ord = (Array.isArray(rawOrd) ? rawOrd[0] : rawOrd) as {
         order_number?: string;
         table_number?: string;
         customer_name?: string | null;
@@ -111,7 +112,7 @@ export async function GET(req: NextRequest) {
           diet_type?: string;
           special_instructions?: string | null;
         }>;
-      }) || {};
+      } || {};
 
       const items: AdminPaymentItem[] = (ord.order_items || []).map((it) => ({
         id: it.id,

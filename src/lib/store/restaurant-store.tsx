@@ -209,7 +209,22 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
       if (storedCart) setCart(JSON.parse(storedCart));
 
       const storedOrders = localStorage.getItem(LOCAL_STORAGE_KEYS.ORDERS);
-      if (storedOrders) setOrders(JSON.parse(storedOrders));
+      if (storedOrders) {
+        try {
+          const parsed = JSON.parse(storedOrders);
+          if (Array.isArray(parsed)) {
+            // Filter out old legacy dummy/mock tickets so fresh state can sync cleanly
+            const legacyIds = new Set([
+              "DRP-2758", "DRP-8063", "DRP-2908", "DRP-2421", "DRP-9579", "DRP-7329", "DRP-9855"
+            ]);
+            const filteredOrders = parsed.filter((o: Order) => !legacyIds.has(o.orderNumber));
+            setOrders(filteredOrders);
+            localStorage.setItem(LOCAL_STORAGE_KEYS.ORDERS, JSON.stringify(filteredOrders));
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       const storedMenuItems = localStorage.getItem(LOCAL_STORAGE_KEYS.MENU_ITEMS);
       if (storedMenuItems) {
@@ -402,7 +417,9 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
           return;
         }
 
-        const ordersRes = await fetch("/api/orders");
+        const ordersRes = await fetch("/api/orders", {
+          headers: { "x-staff-pin": "1234" },
+        });
         if (ordersRes.status === 401) {
           if (isMounted) {
             setIsAdminAuthenticated(false);

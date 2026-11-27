@@ -143,7 +143,13 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ payments: formatted });
+    return NextResponse.json({
+      payments: formatted,
+      debug: {
+        supabaseHost: supabaseAdmin ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || "http://unknown").host : "none",
+        count: formatted.length,
+      },
+    });
   } catch (err: unknown) {
     console.error("Payments API Error:", err);
     return NextResponse.json({ error: safeServerError(err, "Failed to fetch payments history") }, { status: 500 });

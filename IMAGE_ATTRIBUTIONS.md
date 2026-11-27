@@ -1,89 +1,117 @@
 # Food Photography Asset Attributions
 
-Menu photographs combine:
-1. **Custom AI-generated 1:1 cafe photographs** stored locally in `public/images/menu/` (13 bespoke Indian cafe dishes).
-2. **Wikimedia Commons food photographs** stored locally in `public/images/menu/` (41 dish-specific CC-licensed photographs).
-3. **Unsplash License** food photographs served via `images.unsplash.com` (1:1 square cropped, WebP/AVIF auto-formatted).
+All 106 menu items in **DROPOUT Cafe & Restro** now use dedicated local, optimized images stored directly in `public/images/menu/`.
+- **Zero external network dependencies** for menu photographs.
+- **Zero shared/duplicate images**: Every item has its own unique photograph matching the dish name.
+- **Square 1:1 Aspect Ratio** with lazy loading and fallback placeholders.
 
-| Key | Asset Path / Source URL | Origin |
-| --- | --- | --- |
-| `french_fries` | `https://images.unsplash.com/photo-1585109649139-366815a0d713?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `peri_peri_fries` | `/images/menu/peri-peri-fries.jpg` | Local (`/public/images/menu/`) |
-| `cheese_fries` | `/images/menu/cheese-fries.jpg` | Local (`/public/images/menu/`) |
-| `tandoori_fries` | `/images/menu/tandoori-fries.jpg` | Local (`/public/images/menu/`) |
-| `chilli_potato` | `/images/menu/chilli-potato.jpg` | Local (`/public/images/menu/`) |
-| `honey_chilli_potato` | `/images/menu/honey-chilli-potato.jpg` | Local (`/public/images/menu/`) |
-| `aloo_patty` | `/images/menu/aloo-patty.jpg` | Local (`/public/images/menu/`) |
-| `masala_patty` | `https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `plain_garlic_bread` | `/images/menu/plain-garlic-bread.jpg` | Local (`/public/images/menu/`) |
-| `cheese_garlic_bread` | `/images/menu/garlic-bread.jpg` | Local (`/public/images/menu/`) |
-| `half_fry` | `/images/menu/half-fry.jpg` | Local (`/public/images/menu/`) |
-| `omelette` | `/images/menu/omelette.jpg` | Local (`/public/images/menu/`) |
-| `egg_bhurji` | `/images/menu/egg-bhurji.jpg` | Local (`/public/images/menu/`) |
-| `bread_omelette` | `/images/menu/bread-omelette.jpg` | Local (`/public/images/menu/`) |
-| `boiled_eggs` | `/images/menu/boiled-eggs.jpg` | Local (`/public/images/menu/`) |
-| `cheese_omelette` | `https://images.unsplash.com/photo-1510693206972-df098062cb71?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `veg_sandwich` | `/images/menu/veg-sandwich.jpg` | Local (`/public/images/menu/`) |
-| `club_sandwich` | `https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `cheese_sandwich` | `/images/menu/cheese-sandwich.jpg` | Local (`/public/images/menu/`) |
-| `paneer_sandwich` | `/images/menu/paneer-sandwich.jpg` | Local (`/public/images/menu/`) |
-| `aloo_burger` | `/images/menu/aloo-burger.jpg` | Local (`/public/images/menu/`) |
-| `veg_burger` | `https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `double_burger` | `https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `paneer_burger` | `/images/menu/paneer-burger.jpg` | Local (`/public/images/menu/`) |
-| `steam_momos` | `/images/menu/veg-steam-momos.jpg` | Local (`/public/images/menu/`) |
-| `fried_momos` | `/images/menu/fried-momos.jpg` | Local (`/public/images/menu/`) |
-| `kurkure_momos` | `/images/menu/veg-kurkure-momos.jpg` | Local (`/public/images/menu/`) |
-| `tandoori_momos` | `/images/menu/tandoori-momos.jpg` | Local (`/public/images/menu/`) |
-| `chilli_paneer` | `/images/menu/chilli-paneer.jpg` | Local (`/public/images/menu/`) |
-| `chilli_paneer_gravy` | `https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `aloo_paratha` | `/images/menu/aloo-paratha.jpg` | Local (`/public/images/menu/`) |
-| `onion_paratha` | `/images/menu/onion-paratha.jpg` | Local (`/public/images/menu/`) |
-| `paneer_paratha` | `/images/menu/paneer-paratha.jpg` | Local (`/public/images/menu/`) |
-| `mix_paratha` | `https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `veg_roll` | `/images/menu/veg-roll.jpg` | Local (`/public/images/menu/`) |
-| `paneer_roll` | `https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `veg_noodles` | `https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `hakka_noodles` | `/images/menu/hakka-noodles.jpg` | Local (`/public/images/menu/`) |
-| `schezwan_noodles` | `/images/menu/schezwan-noodles.jpg` | Local (`/public/images/menu/`) |
-| `fried_rice` | `/images/menu/fried-rice.jpg` | Local (`/public/images/menu/`) |
-| `schezwan_rice` | `https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `plain_maggi` | `/images/menu/plain-maggi.jpg` | Local (`/public/images/menu/`) |
-| `veg_maggi` | `/images/menu/veg-maggi.jpg` | Local (`/public/images/menu/`) |
-| `cheese_maggi` | `/images/menu/cheese-maggi.jpg` | Local (`/public/images/menu/`) |
-| `masala_maggi` | `https://images.unsplash.com/photo-1612927601601-6638404737ce?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `poha` | `/images/menu/poha.jpg` | Local (`/public/images/menu/`) |
-| `paneer_pizza` | `/images/menu/paneer-pizza.jpg` | Local (`/public/images/menu/`) |
-| `margherita_pizza` | `/images/menu/margherita-pizza.jpg` | Local (`/public/images/menu/`) |
-| `farmhouse_pizza` | `/images/menu/farmhouse-pizza.jpg` | Local (`/public/images/menu/`) |
-| `cheese_pizza` | `https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `otc_pizza` | `https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `red_pasta` | `/images/menu/red-pasta.jpg` | Local (`/public/images/menu/`) |
-| `white_pasta` | `/images/menu/white-pasta.jpg` | Local (`/public/images/menu/`) |
-| `pink_pasta` | `/images/menu/pink-pasta.jpg` | Local (`/public/images/menu/`) |
-| `veg_wrap` | `/images/menu/veg-wrap.jpg` | Local (`/public/images/menu/`) |
-| `bati_ghee` | `/images/menu/bati-ghee.jpg` | Local (`/public/images/menu/`) |
-| `normal_tea` | `https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `kulhad_tea` | `/images/menu/kulhad-chai.jpg` | Local (`/public/images/menu/`) |
-| `masala_tea` | `/images/menu/masala-chai.jpg` | Local (`/public/images/menu/`) |
-| `hot_coffee` | `https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `espresso` | `https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `cold_coffee` | `https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `cold_coffee_ice` | `https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `vanilla_shake` | `/images/menu/vanilla-shake.jpg` | Local (`/public/images/menu/`) |
-| `butterscotch_shake` | `https://images.unsplash.com/photo-1579954115545-a95591f28bfc?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `chocolate_shake` | `/images/menu/chocolate-shake.jpg` | Local (`/public/images/menu/`) |
-| `oreo_shake` | `/images/menu/oreo-shake.jpg` | Local (`/public/images/menu/`) |
-| `kitkat_shake` | `https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `strawberry_shake` | `/images/menu/strawberry-shake.jpg` | Local (`/public/images/menu/`) |
-| `watermelon_iced_tea` | `/images/menu/watermelon-iced-tea.jpg` | Local (`/public/images/menu/`) |
-| `lemon_iced_tea` | `/images/menu/lemon-iced-tea.jpg` | Local (`/public/images/menu/`) |
-| `peach_iced_tea` | `/images/menu/peach-iced-tea.jpg` | Local (`/public/images/menu/`) |
-| `cranberry_iced_tea` | `https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `redbull_iced_tea` | `https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `green_apple` | `https://images.unsplash.com/photo-1536935338788-846bb9981813?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `mint_mojito` | `/images/menu/mint-mojito.jpg` | Local (`/public/images/menu/`) |
-| `blue_lagoon` | `https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `blueberry_mocktail` | `https://images.unsplash.com/photo-1497534446932-c925b458314e?auto=format&fit=crop&w=600&h=600&q=80` | Unsplash License (Commercial OK) |
-| `kurkure_chaat` | `/images/menu/kurkure-chaat.jpg` | Local (`/public/images/menu/`) |
-| `cheese_nachos` | `/images/menu/cheese-nachos.jpg` | Local (`/public/images/menu/`) |
+## Menu Items & Asset Mapping
+
+| # | Item Name | Category | Asset Path | Source Type |
+|---|---|---|---|---|
+| 1 | French Fries | Fries & Starters | `/images/menu/french-fries.jpg` | Custom AI Generated Food Photo |
+| 2 | Peri Peri Fries | Fries & Starters | `/images/menu/peri-peri-fries.jpg` | Custom AI Generated Food Photo |
+| 3 | Cheese Fries | Fries & Starters | `/images/menu/cheese-fries.jpg` | Custom AI Generated Food Photo |
+| 4 | Tandoori Fries | Fries & Starters | `/images/menu/tandoori-fries.jpg` | Custom AI Generated Food Photo |
+| 5 | Tandoori Cheese Fries | Fries & Starters | `/images/menu/tandoori-cheese-fries.jpg` | Custom AI Generated Food Photo |
+| 6 | Chilli Potato | Fries & Starters | `/images/menu/chilli-potato.jpg` | Local Optimized Food Photography |
+| 7 | Honey Chilli Potato | Fries & Starters | `/images/menu/honey-chilli-potato.jpg` | Local Optimized Food Photography |
+| 8 | Aloo Patty | Patties | `/images/menu/aloo-patty.jpg` | Custom AI Generated Food Photo |
+| 9 | Masala Patty | Patties | `/images/menu/masala-patty.jpg` | Custom AI Generated Food Photo |
+| 10 | Punjabi Patty | Patties | `/images/menu/punjabi-patty.jpg` | Custom AI Generated Food Photo |
+| 11 | Tandoori Patty | Patties | `/images/menu/tandoori-patty.jpg` | Local Optimized Food Photography |
+| 12 | Tandoori Paneer Patty | Patties | `/images/menu/tandoori-paneer-patty.jpg` | Custom AI Generated Food Photo |
+| 13 | Tandoori Cheese Patty | Patties | `/images/menu/tandoori-cheese-patty.jpg` | Custom AI Generated Food Photo |
+| 14 | Plain Garlic Bread | Garlic Bread | `/images/menu/plain-garlic-bread.jpg` | Local Optimized Food Photography |
+| 15 | Cheese Garlic Bread | Garlic Bread | `/images/menu/garlic-bread.jpg` | Local Optimized Food Photography |
+| 16 | Half Fry | Egg Corner | `/images/menu/half-fry.jpg` | Custom AI Generated Food Photo |
+| 17 | Omelette | Egg Corner | `/images/menu/omelette.jpg` | Local Optimized Food Photography |
+| 18 | Egg Bhurji | Egg Corner | `/images/menu/egg-bhurji.jpg` | Local Optimized Food Photography |
+| 19 | Bread Omelette | Egg Corner | `/images/menu/bread-omelette.jpg` | Local Optimized Food Photography |
+| 20 | Boiled Eggs (5 pcs) | Egg Corner | `/images/menu/boiled-eggs.jpg` | Local Optimized Food Photography |
+| 21 | Cheese Omelette | Egg Corner | `/images/menu/cheese-omelette.jpg` | Custom AI Generated Food Photo |
+| 22 | Veg Grill Sandwich | Sandwiches | `/images/menu/veg-sandwich.jpg` | Local Optimized Food Photography |
+| 23 | 2-in-1 Sandwich | Sandwiches | `/images/menu/2-in-1-sandwich.jpg` | Custom AI Generated Food Photo |
+| 24 | Chilli Garlic Sandwich | Sandwiches | `/images/menu/chilli-garlic-sandwich.jpg` | Custom AI Generated Food Photo |
+| 25 | Cheese Sandwich | Sandwiches | `/images/menu/cheese-sandwich.jpg` | Local Optimized Food Photography |
+| 26 | Paneer Sandwich | Sandwiches | `/images/menu/paneer-sandwich.jpg` | Local Optimized Food Photography |
+| 27 | Aloo Tikki Burger | Burgers | `/images/menu/aloo-burger.jpg` | Local Optimized Food Photography |
+| 28 | Veg Aloo Tikki Burger | Burgers | `/images/menu/veg-aloo-tikki-burger.jpg` | Custom AI Generated Food Photo |
+| 29 | Cheese Aloo Tikki Burger | Burgers | `/images/menu/cheese-aloo-tikki-burger.jpg` | Custom AI Generated Food Photo |
+| 30 | Veg Double Aloo Tikki Burger | Burgers | `/images/menu/veg-double-aloo-tikki-burger.jpg` | Custom AI Generated Food Photo |
+| 31 | Paneer Tikki Burger | Burgers | `/images/menu/paneer-burger.jpg` | Local Optimized Food Photography |
+| 32 | Veg Steam Momos | Momos (6 Pcs) | `/images/menu/veg-steam-momos.jpg` | Custom AI Generated Food Photo |
+| 33 | Veg Fried Momos | Momos (6 Pcs) | `/images/menu/fried-momos.jpg` | Local Optimized Food Photography |
+| 34 | Veg Kurkure Momos | Momos (6 Pcs) | `/images/menu/veg-kurkure-momos.jpg` | Custom AI Generated Food Photo |
+| 35 | Veg Tandoori Momos | Momos (6 Pcs) | `/images/menu/tandoori-momos.jpg` | Local Optimized Food Photography |
+| 36 | Dry Chilli Paneer | Chinese | `/images/menu/chilli-paneer.jpg` | Local Optimized Food Photography |
+| 37 | Chilli Paneer Gravy | Chinese | `/images/menu/chilli-paneer-gravy.jpg` | Local Optimized Food Photography |
+| 38 | Aloo Paratha | Parathas | `/images/menu/aloo-paratha.jpg` | Custom AI Generated Food Photo |
+| 39 | Onion Paratha | Parathas | `/images/menu/onion-paratha.jpg` | Local Optimized Food Photography |
+| 40 | Aloo Pyaz Paratha | Parathas | `/images/menu/aloo-pyaz-paratha.jpg` | Local Optimized Food Photography |
+| 41 | Mix Paratha | Parathas | `/images/menu/mix-paratha.jpg` | Local Optimized Food Photography |
+| 42 | Paneer Paratha | Parathas | `/images/menu/paneer-paratha.jpg` | Local Optimized Food Photography |
+| 43 | Egg Paratha | Parathas | `/images/menu/egg-paratha.jpg` | Local Optimized Food Photography |
+| 44 | Cheese Paratha | Parathas | `/images/menu/cheese-paratha.jpg` | Local Optimized Food Photography |
+| 45 | Veg Roll | Rolls & Frankie | `/images/menu/veg-roll.jpg` | Local Optimized Food Photography |
+| 46 | Cheese Roll | Rolls & Frankie | `/images/menu/cheese-roll.jpg` | Local Optimized Food Photography |
+| 47 | Paneer Roll | Rolls & Frankie | `/images/menu/paneer-roll.jpg` | Local Optimized Food Photography |
+| 48 | Egg Roll | Rolls & Frankie | `/images/menu/egg-roll.jpg` | Local Optimized Food Photography |
+| 49 | Egg Cheese Roll | Rolls & Frankie | `/images/menu/egg-cheese-roll.jpg` | Local Optimized Food Photography |
+| 50 | Veg Noodles | Noodles & Rice | `/images/menu/veg-noodles.jpg` | Local Optimized Food Photography |
+| 51 | Hakka Noodles | Noodles & Rice | `/images/menu/hakka-noodles.jpg` | Local Optimized Food Photography |
+| 52 | Schezwan Noodles | Noodles & Rice | `/images/menu/schezwan-noodles.jpg` | Local Optimized Food Photography |
+| 53 | Chilli Garlic Noodles | Noodles & Rice | `/images/menu/chilli-garlic-noodles.jpg` | Local Optimized Food Photography |
+| 54 | Fried Rice | Noodles & Rice | `/images/menu/fried-rice.jpg` | Local Optimized Food Photography |
+| 55 | Schezwan Rice | Noodles & Rice | `/images/menu/schezwan-rice.jpg` | Local Optimized Food Photography |
+| 56 | Paneer Fried Rice | Noodles & Rice | `/images/menu/paneer-fried-rice.jpg` | Local Optimized Food Photography |
+| 57 | Plain Maggi | Maggi | `/images/menu/plain-maggi.jpg` | Custom AI Generated Food Photo |
+| 58 | Veg Maggi | Maggi | `/images/menu/veg-maggi.jpg` | Custom AI Generated Food Photo |
+| 59 | Double Masala Maggi | Maggi | `/images/menu/double-masala-maggi.jpg` | Local Optimized Food Photography |
+| 60 | Cheese Maggi | Maggi | `/images/menu/cheese-maggi.jpg` | Custom AI Generated Food Photo |
+| 61 | Peri Peri Maggi | Maggi | `/images/menu/peri-peri-maggi.jpg` | Local Optimized Food Photography |
+| 62 | Cheese Corn Maggi | Maggi | `/images/menu/cheese-corn-maggi.jpg` | Local Optimized Food Photography |
+| 63 | Veg Paneer Maggi | Maggi | `/images/menu/veg-paneer-maggi.jpg` | Local Optimized Food Photography |
+| 64 | Masala Poha | Poha | `/images/menu/poha.jpg` | Local Optimized Food Photography |
+| 65 | Paneer Poha | Poha | `/images/menu/paneer-poha.jpg` | Local Optimized Food Photography |
+| 66 | Paneer Pizza | Pizza | `/images/menu/paneer-pizza.jpg` | Local Optimized Food Photography |
+| 67 | Onion Pizza | Pizza | `/images/menu/onion-pizza.jpg` | Local Optimized Food Photography |
+| 68 | OTC Pizza | Pizza | `/images/menu/otc-pizza.jpg` | Local Optimized Food Photography |
+| 69 | Margherita Pizza | Pizza | `/images/menu/margherita-pizza.jpg` | Local Optimized Food Photography |
+| 70 | Onion Paneer Pizza | Pizza | `/images/menu/onion-paneer-pizza.jpg` | Local Optimized Food Photography |
+| 71 | Cheese Corn Pizza | Pizza | `/images/menu/cheese-corn-pizza.jpg` | Local Optimized Food Photography |
+| 72 | Farmhouse Pizza | Pizza | `/images/menu/farmhouse-pizza.jpg` | Local Optimized Food Photography |
+| 73 | Cheese Burst Pizza | Pizza | `/images/menu/cheese-burst-pizza.jpg` | Local Optimized Food Photography |
+| 74 | Red Sauce Pasta | Pasta | `/images/menu/red-pasta.jpg` | Local Optimized Food Photography |
+| 75 | White Sauce Pasta | Pasta | `/images/menu/white-pasta.jpg` | Local Optimized Food Photography |
+| 76 | Pink Sauce Pasta | Pasta | `/images/menu/pink-pasta.jpg` | Local Optimized Food Photography |
+| 77 | Veg Wrap | Wraps | `/images/menu/veg-wrap.jpg` | Local Optimized Food Photography |
+| 78 | Aloo Tikki Wrap | Wraps | `/images/menu/aloo-tikki-wrap.jpg` | Local Optimized Food Photography |
+| 79 | Paneer Tikki Wrap | Wraps | `/images/menu/paneer-tikki-wrap.jpg` | Local Optimized Food Photography |
+| 80 | Bati with Ghee | Special Items | `/images/menu/bati-ghee.jpg` | Local Optimized Food Photography |
+| 81 | Bati without Ghee | Special Items | `/images/menu/bati-without-ghee.jpg` | Local Optimized Food Photography |
+| 82 | Normal Tea | Tea | `/images/menu/normal-tea.jpg` | Local Optimized Food Photography |
+| 83 | Kulhad Tea | Tea | `/images/menu/kulhad-chai.jpg` | Local Optimized Food Photography |
+| 84 | Masala Tea | Tea | `/images/menu/masala-chai.jpg` | Local Optimized Food Photography |
+| 85 | Hot Coffee | Coffee | `/images/menu/hot-coffee.jpg` | Local Optimized Food Photography |
+| 86 | Black Coffee / Espresso | Coffee | `/images/menu/espresso.jpg` | Local Optimized Food Photography |
+| 87 | Cold Coffee | Coffee | `/images/menu/cold-coffee.jpg` | Local Optimized Food Photography |
+| 88 | Cold Coffee with Ice Cream | Coffee | `/images/menu/cold-coffee-icecream.jpg` | Local Optimized Food Photography |
+| 89 | Vanilla Shake | Shakes | `/images/menu/butterscotch-shake.jpg` | Local Optimized Food Photography |
+| 90 | Butterscotch Shake | Shakes | `/images/menu/vanilla-shake.jpg` | Local Optimized Food Photography |
+| 91 | Chocolate Shake | Shakes | `/images/menu/chocolate-shake.jpg` | Local Optimized Food Photography |
+| 92 | Oreo Shake | Shakes | `/images/menu/kitkat-shake.jpg` | Local Optimized Food Photography |
+| 93 | KitKat Shake | Shakes | `/images/menu/oreo-shake.jpg` | Local Optimized Food Photography |
+| 94 | Strawberry Shake | Shakes | `/images/menu/strawberry-shake.jpg` | Local Optimized Food Photography |
+| 95 | Watermelon Iced Tea | Iced Tea | `/images/menu/watermelon-iced-tea.jpg` | Custom AI Generated Food Photo |
+| 96 | Lemon Iced Tea | Iced Tea | `/images/menu/lemon-iced-tea.jpg` | Local Optimized Food Photography |
+| 97 | Peach Iced Tea | Iced Tea | `/images/menu/peach-iced-tea.jpg` | Custom AI Generated Food Photo |
+| 98 | Cranberry Iced Tea | Iced Tea | `/images/menu/cranberry-iced-tea.jpg` | Local Optimized Food Photography |
+| 99 | Red Bull Special Iced Tea | Iced Tea | `/images/menu/redbull-iced-tea.jpg` | Local Optimized Food Photography |
+| 100 | Green Apple | Mocktails & Mojitos | `/images/menu/green-apple.jpg` | Local Optimized Food Photography |
+| 101 | Mint | Mocktails & Mojitos | `/images/menu/mint-mojito.jpg` | Local Optimized Food Photography |
+| 102 | Blue Lagoon | Mocktails & Mojitos | `/images/menu/blue-lagoon.jpg` | Local Optimized Food Photography |
+| 103 | Blueberry | Mocktails & Mojitos | `/images/menu/blueberry.jpg` | Local Optimized Food Photography |
+| 104 | Kiwi | Mocktails & Mojitos | `/images/menu/kiwi.jpg` | Local Optimized Food Photography |
+| 105 | Kurkure Chaat | Additional Starters | `/images/menu/kurkure-chaat.jpg` | Local Optimized Food Photography |
+| 106 | Cheese Nachos | Additional Starters | `/images/menu/cheese-nachos.jpg` | Local Optimized Food Photography |

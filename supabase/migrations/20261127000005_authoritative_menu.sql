@@ -1,6 +1,4 @@
-BEGIN;
-
--- ==============================================================================
+  -- ==============================================================================
   -- DROPOUT CAFE & RESTRO - Authoritative Menu Replacement Migration
   -- Preserves all existing orders, order_items (menu_item_id ON DELETE SET NULL),
   -- payments, profiles, and restaurant_tables.
@@ -32,12 +30,7 @@ BEGIN;
     ('10529d57-3011-5384-a8ee-1df5358f35f9', 'Shakes', 'shakes', 20, TRUE),
     ('d786bf3f-0419-5e81-a485-795db0204408', 'Iced Tea', 'iced-tea', 21, TRUE),
     ('3a46b170-3b14-5cb0-928e-77a552c9e07a', 'Mocktails & Mojitos', 'mocktails-mojitos', 22, TRUE),
-    ('8e5e6237-5d1b-59cf-a66a-c3dbdcab4ef4', 'Additional Starters', 'additional-starters', 23, TRUE)
-  ON CONFLICT (id) DO UPDATE SET
-    name = EXCLUDED.name,
-    slug = EXCLUDED.slug,
-    display_order = EXCLUDED.display_order,
-    is_active = EXCLUDED.is_active;
+    ('8e5e6237-5d1b-59cf-a66a-c3dbdcab4ef4', 'Additional Starters', 'additional-starters', 23, TRUE);
 
   INSERT INTO public.menu_items (id, category_id, name, description, price_paise, diet_type, image_url, is_available, tags) VALUES
     ('550ea3e5-0693-5c2f-9164-25e73ea9cbde', 'deabdbe3-1775-521e-972f-56ea077a5c6c', 'French Fries', 'Classic golden crispy salted potato fries.', 6000, 'veg', '/images/menu/french-fries.jpg', TRUE, ARRAY[]::TEXT[]),
@@ -145,16 +138,7 @@ BEGIN;
     ('284a8053-555e-5b8d-8b49-5f09a753df66', '3a46b170-3b14-5cb0-928e-77a552c9e07a', 'Blueberry', 'Chilled blueberry fizz mocktail.', 6000, 'veg', '/images/menu/blueberry.jpg', TRUE, ARRAY[]::TEXT[]),
     ('63c898a2-50e0-571f-a03e-89a62700aca4', '3a46b170-3b14-5cb0-928e-77a552c9e07a', 'Kiwi', 'Refreshing tangy kiwi cooler mocktail.', 6000, 'veg', '/images/menu/kiwi.jpg', TRUE, ARRAY[]::TEXT[]),
     ('a4fccaf2-466c-556a-85a6-49f604ac462b', '8e5e6237-5d1b-59cf-a66a-c3dbdcab4ef4', 'Kurkure Chaat', 'Crunchy Kurkure tossed with onions, tomatoes, chaat masala & lemon.', 6000, 'veg', '/images/menu/kurkure-chaat.jpg', TRUE, ARRAY[]::TEXT[]),
-    ('53a4c389-2a95-50d1-8fa6-53a16a03ae09', '8e5e6237-5d1b-59cf-a66a-c3dbdcab4ef4', 'Cheese Nachos', 'Crispy tortilla nachos topped with warm melted cheese & salsa.', 8000, 'veg', '/images/menu/cheese-nachos.jpg', TRUE, ARRAY[]::TEXT[])
-  ON CONFLICT (id) DO UPDATE SET
-    category_id = EXCLUDED.category_id,
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    price_paise = EXCLUDED.price_paise,
-    diet_type = EXCLUDED.diet_type,
-    image_url = EXCLUDED.image_url,
-    is_available = EXCLUDED.is_available,
-    tags = EXCLUDED.tags;
+    ('53a4c389-2a95-50d1-8fa6-53a16a03ae09', '8e5e6237-5d1b-59cf-a66a-c3dbdcab4ef4', 'Cheese Nachos', 'Crispy tortilla nachos topped with warm melted cheese & salsa.', 8000, 'veg', '/images/menu/cheese-nachos.jpg', TRUE, ARRAY[]::TEXT[]);
 
   INSERT INTO public.menu_variants (id, menu_item_id, name, price_paise, is_default, is_available, display_order) VALUES
     ('c3845132-8900-51a4-90e6-29a6379a6b01', 'ef433d6b-143c-57ed-840a-a0d08bb986b3', 'Small', 5000, TRUE, TRUE, 0),
@@ -172,13 +156,4 @@ BEGIN;
     ('520c71b2-4a86-5a05-a5bd-89ad0cc9b498', '2563644d-80e2-5ffa-80a7-af9966699789', 'Small', 6000, TRUE, TRUE, 0),
     ('9e34b8b1-e5bf-572f-ae95-7e63aef0d09a', '2563644d-80e2-5ffa-80a7-af9966699789', 'Large', 8000, FALSE, TRUE, 1),
   ('05a752c2-4721-571b-8ffa-5e7c6b13ce82', 'dc08fd42-caf3-5c02-b9cc-e31568a9fdbe', 'Small', 6000, TRUE, TRUE, 0),
-  ('ece5f104-78bb-5871-a9a3-ea1121883699', 'dc08fd42-caf3-5c02-b9cc-e31568a9fdbe', 'Large', 8000, FALSE, TRUE, 1)
-  ON CONFLICT (id) DO UPDATE SET
-    menu_item_id = EXCLUDED.menu_item_id,
-    name = EXCLUDED.name,
-    price_paise = EXCLUDED.price_paise,
-    is_default = EXCLUDED.is_default,
-    is_available = EXCLUDED.is_available,
-    display_order = EXCLUDED.display_order;
-
-COMMIT;
+  ('ece5f104-78bb-5871-a9a3-ea1121883699', 'dc08fd42-caf3-5c02-b9cc-e31568a9fdbe', 'Large', 8000, FALSE, TRUE, 1);

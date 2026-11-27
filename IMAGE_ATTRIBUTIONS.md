@@ -97,11 +97,11 @@ All 106 menu items in **DROPOUT Cafe & Restro** now use dedicated local, optimiz
 | 86 | Black Coffee / Espresso | Coffee | `/images/menu/espresso.jpg` | Local Optimized Food Photography |
 | 87 | Cold Coffee | Coffee | `/images/menu/cold-coffee.jpg` | Local Optimized Food Photography |
 | 88 | Cold Coffee with Ice Cream | Coffee | `/images/menu/cold-coffee-icecream.jpg` | Local Optimized Food Photography |
-| 89 | Vanilla Shake | Shakes | `/images/menu/butterscotch-shake.jpg` | Local Optimized Food Photography |
-| 90 | Butterscotch Shake | Shakes | `/images/menu/vanilla-shake.jpg` | Local Optimized Food Photography |
+| 89 | Vanilla Shake | Shakes | `/images/menu/vanilla-shake.jpg` | Local Optimized Food Photography |
+| 90 | Butterscotch Shake | Shakes | `/images/menu/butterscotch-shake.jpg` | Local Optimized Food Photography |
 | 91 | Chocolate Shake | Shakes | `/images/menu/chocolate-shake.jpg` | Local Optimized Food Photography |
-| 92 | Oreo Shake | Shakes | `/images/menu/kitkat-shake.jpg` | Local Optimized Food Photography |
-| 93 | KitKat Shake | Shakes | `/images/menu/oreo-shake.jpg` | Local Optimized Food Photography |
+| 92 | Oreo Shake | Shakes | `/images/menu/oreo-shake.jpg` | Local Optimized Food Photography |
+| 93 | KitKat Shake | Shakes | `/images/menu/kitkat-shake.jpg` | Local Optimized Food Photography |
 | 94 | Strawberry Shake | Shakes | `/images/menu/strawberry-shake.jpg` | Local Optimized Food Photography |
 | 95 | Watermelon Iced Tea | Iced Tea | `/images/menu/watermelon-iced-tea.jpg` | Custom AI Generated Food Photo |
 | 96 | Lemon Iced Tea | Iced Tea | `/images/menu/lemon-iced-tea.jpg` | Local Optimized Food Photography |

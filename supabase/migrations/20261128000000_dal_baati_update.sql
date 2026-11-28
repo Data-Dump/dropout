@@ -1,5 +1,5 @@
 -- DROPOUT CAFE & RESTRO - DAL BAATI MENU UPDATE
--- Dal Baati (3 Pieces) - Rs 100 with optional Extra Ghee (+Rs 10)
+-- Dal Baati (3 Pieces) - Rs 100 with optional With Ghee (+Rs 10)
 
 -- 1. Remove obsolete bati items
 DELETE FROM public.menu_items
@@ -37,7 +37,7 @@ ON CONFLICT (id) DO UPDATE SET
     image_url = EXCLUDED.image_url,
     is_available = EXCLUDED.is_available;
 
--- 3. Add Extra Ghee add-on (+Rs 10 = 1000 paise)
+-- 3. Add With Ghee add-on (+Rs 10 = 1000 paise)
 DELETE FROM public.menu_addons WHERE menu_item_id = '474a5f1c-401c-5378-b41c-fbb6baeeebf1';
 
 INSERT INTO public.menu_addons (
@@ -48,7 +48,7 @@ INSERT INTO public.menu_addons (
 )
 VALUES (
     '474a5f1c-401c-5378-b41c-fbb6baeeebf1',
-    'Extra Ghee',
+    'With Ghee',
     1000,
     TRUE
 );

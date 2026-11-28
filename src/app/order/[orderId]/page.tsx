@@ -356,7 +356,7 @@ export default function OrderTrackingPage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-foreground">Razorpay Online Payment</h3>
-                  <p className="text-[11px] text-muted-foreground">UPI (GPay/PhonePe), Cards, NetBanking</p>
+                  <p className="text-[11px] text-muted-foreground">UPI (GPay, Paytm, Any UPI), Cards, NetBanking</p>
                 </div>
               </div>
               <Badge variant="amber" className="animate-pulse font-bold text-xs">

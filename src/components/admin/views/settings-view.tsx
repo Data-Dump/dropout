@@ -150,7 +150,7 @@ export function SettingsView() {
 
         <div className="space-y-2 text-xs">
           <p className="text-muted-foreground leading-relaxed">
-            Razorpay online checkout is configured for table self-ordering. Accepts UPI (GPay, PhonePe, Paytm), Credit/Debit Cards, and NetBanking.
+            Razorpay online checkout is configured for table self-ordering. Accepts UPI (GPay, Paytm, BHIM), Credit/Debit Cards, and NetBanking.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <div className="p-3 rounded-xl bg-secondary/40 border border-border/50">

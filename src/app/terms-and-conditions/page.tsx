@@ -79,7 +79,7 @@ export default function TermsAndConditionsPage() {
         </p>
         <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm text-muted-foreground">
           <li>
-            <strong className="text-foreground">Instant UPI / Online:</strong> Secure digital payments facilitated via Razorpay or UPI apps (GPay, PhonePe, Paytm, BHIM, Cred) directly from your mobile device.
+            <strong className="text-foreground">Instant UPI / Online:</strong> Secure digital payments facilitated via Razorpay or UPI apps (GPay, Paytm, BHIM, Cred) directly from your mobile device.
           </li>
           <li>
             <strong className="text-foreground">Pay at Counter:</strong> Customers may choose to pay via cash, physical card, or static counter QR code at the cash counter upon dining or order collection.

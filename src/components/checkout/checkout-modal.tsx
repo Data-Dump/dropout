@@ -286,7 +286,7 @@ export function CheckoutModal({ open, onOpenChange }: CheckoutModalProps) {
                   )}
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  UPI (GPay, PhonePe, Paytm), Cards & NetBanking via Razorpay.
+                  UPI (GPay, Paytm, BHIM), Cards & NetBanking via Razorpay.
                 </p>
               </button>
 

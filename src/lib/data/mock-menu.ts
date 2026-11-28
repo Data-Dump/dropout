@@ -1017,7 +1017,7 @@ export const MOCK_MENU_ITEMS: MenuItem[] = [
         id: "grp-dal-baati-addons",
         title: "Add-ons",
         options: [
-          { id: "addon-extra-ghee", name: "Extra Ghee", price: 10 },
+          { id: "addon-with-ghee", name: "With Ghee", price: 10 },
         ],
       },
     ],

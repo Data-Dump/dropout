@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "PhonePe online payment is currently unavailable. Please choose Pay at Counter.",
+          error: "Razorpay online payment is currently unavailable. Please choose Pay at Counter.",
           unavailable: true,
         },
         { status: 503 }

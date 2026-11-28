@@ -4,7 +4,6 @@ import { getStaffSessionFromRequest, isDirectBrowserDocumentRequest, directBrows
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { sanitizeText, sanitizePhone, safeServerError } from "@/lib/security/sanitize";
 import {
-  DROPOUT_TABLES,
   normalizeTableNumber,
   normalizeOrderStatus,
   normalizePaymentStatus,
@@ -113,9 +112,9 @@ export async function POST(req: NextRequest) {
 
     // 1. Strict table validation
     const normalizedTable = normalizeTableNumber(body.tableNumber);
-    if (!normalizedTable || !DROPOUT_TABLES.includes(normalizedTable)) {
+    if (!normalizedTable) {
       return NextResponse.json(
-        { error: "Invalid dining table. Orders must be assigned to Table 01 through Table 10." },
+        { error: "Invalid dining table. Please choose a valid dining table." },
         { status: 400 }
       );
     }

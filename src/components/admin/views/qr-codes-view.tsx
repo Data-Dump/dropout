@@ -3,11 +3,13 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
-import { DROPOUT_TABLES, TableNumber } from "@/lib/utils";
+import { TableNumber } from "@/lib/utils";
+import { useRestaurant } from "@/lib/store/restaurant-store";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 
 export function QRCodesView() {
+  const { tables } = useRestaurant();
   const [selectedTable, setSelectedTable] = useState<TableNumber>("Table 01");
   const [viewMode, setViewMode] = useState<"single" | "all">("single");
 
@@ -25,7 +27,7 @@ export function QRCodesView() {
             Table QR Stand Print Hub
           </h3>
           <p className="text-xs text-muted-foreground">
-            High-resolution QR code stands tailored for Table 01 through Table 10.
+            High-resolution QR code stands tailored for all dining floor tables.
           </p>
         </div>
 
@@ -45,7 +47,7 @@ export function QRCodesView() {
                 viewMode === "all" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
               }`}
             >
-              All 10 Tables Grid
+              All {tables.length} Tables Grid
             </button>
           </div>
 
@@ -61,19 +63,22 @@ export function QRCodesView() {
         <div className="space-y-5">
           {/* Table Selector Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
-            {DROPOUT_TABLES.map((t) => (
-              <button
-                key={t}
-                onClick={() => setSelectedTable(t)}
-                className={`shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  selectedTable === t
-                    ? "bg-[#211D1A] text-[#FAF8F5] shadow-xs"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
+            {tables.map((tbl) => {
+              const t = tbl.tableNumber;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setSelectedTable(t)}
+                  className={`shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    selectedTable === t
+                      ? "bg-[#211D1A] text-[#FAF8F5] shadow-xs"
+                      : "bg-secondary text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t}
+                </button>
+              );
+            })}
           </div>
 
           {/* Stand Artwork Container */}
@@ -130,10 +135,11 @@ export function QRCodesView() {
         </div>
       )}
 
-      {/* Mode 2: All 10 Tables Grid */}
+      {/* Mode 2: All Tables Grid */}
       {viewMode === "all" && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 print:grid-cols-2">
-          {DROPOUT_TABLES.map((t) => {
+          {tables.map((tbl) => {
+            const t = tbl.tableNumber;
             const tableSlug = t.toLowerCase().replace(/\s+/g, "-").replace("table-", "");
             const qrUrl = `${origin}/table/${tableSlug}`;
 

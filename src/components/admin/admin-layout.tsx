@@ -311,7 +311,7 @@ export function AdminLayout({ activeTab, onTabChange, children }: AdminLayoutPro
             </h1>
             <span className="text-xs text-muted-foreground">•</span>
             <span className="text-xs text-muted-foreground">
-              DROPOUT Cafe & Restro (10 Tables)
+              DROPOUT Cafe & Restro ({tables.length} Tables)
             </span>
           </div>
 

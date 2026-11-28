@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { DROPOUT_TABLES, TableNumber } from "@/lib/utils";
+import { TableNumber } from "@/lib/utils";
 import { useRestaurant } from "@/lib/store/restaurant-store";
 import { Check, QrCode } from "lucide-react";
 
@@ -59,15 +59,15 @@ export function TableSelectorModal({
             </div>
           </div>
           <DialogDescription className="text-xs text-muted-foreground pt-1">
-            Choose your dining table at DROPOUT Cafe (Tables 01 to 10) to browse and place orders.
+            Choose your dining table at DROPOUT Cafe to browse and place orders.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-2">
-          {DROPOUT_TABLES.map((tableNum) => {
+          {tables.map((tbl) => {
+            const tableNum = tbl.tableNumber;
             const isSelected = selectedTable === tableNum;
-            const tableState = tables.find((t) => t.tableNumber === tableNum);
-            const isOccupied = tableState?.status === "occupied";
+            const isOccupied = tbl.status === "occupied";
 
             return (
               <button

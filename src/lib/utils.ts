@@ -47,7 +47,7 @@ export const DROPOUT_TABLES = [
   "Table 10",
 ] as const;
 
-export type TableNumber = (typeof DROPOUT_TABLES)[number];
+export type TableNumber = string;
 
 export function normalizeTableNumber(rawTable: string | null | undefined): TableNumber | null {
   if (!rawTable) return null;
@@ -58,9 +58,8 @@ export function normalizeTableNumber(rawTable: string | null | undefined): Table
   if (!match) return null;
 
   const num = parseInt(match[1], 10);
-  if (num >= 1 && num <= 10) {
-    const formatted = `Table ${num.toString().padStart(2, "0")}` as TableNumber;
-    return DROPOUT_TABLES.includes(formatted) ? formatted : null;
+  if (num >= 1 && num <= 99) {
+    return `Table ${num.toString().padStart(2, "0")}` as TableNumber;
   }
   return null;
 }

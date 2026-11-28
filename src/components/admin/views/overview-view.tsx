@@ -134,7 +134,7 @@ export function OverviewView({ onNavigateTab }: OverviewViewProps) {
             {metrics.todayOrdersCount}
           </div>
           <p className="text-[11px] text-muted-foreground">
-            {metrics.occupiedTables} of 10 tables currently occupied
+            {metrics.occupiedTables} of {tables.length} tables currently occupied
           </p>
         </div>
 

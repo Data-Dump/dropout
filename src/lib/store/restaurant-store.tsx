@@ -37,6 +37,8 @@ interface RestaurantContextType {
   setSelectedTable: (table: TableNumber | null) => void;
   tables: TableState[];
   updateTableCapacity: (tableNumber: TableNumber, capacity: number) => void;
+  addTable: (tableNumber: string, capacity?: number) => Promise<boolean>;
+  removeTable: (tableNumber: TableNumber) => Promise<boolean>;
 
   // Menu state
   menuItems: MenuItem[];
@@ -112,6 +114,7 @@ const LOCAL_STORAGE_KEYS = {
   MENU_ITEMS: "dropout_pos_menu_items",
   CATEGORIES: "dropout_pos_categories",
   TABLE_CAPACITIES: "dropout_pos_table_capacities",
+  TABLE_LIST: "dropout_pos_table_list",
   STAFF: "dropout_pos_staff",
   ADMIN_AUTH: "dropout_pos_admin_auth",
   ADMIN_ROLE: "dropout_pos_admin_role",
@@ -188,6 +191,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
   const [orders, setOrders] = useState<Order[]>(INITIAL_EMPTY_ORDERS);
   const [menuItems, setMenuItems] = useState<MenuItem[]>(MOCK_MENU_ITEMS);
   const [categories, setCategories] = useState<Category[]>(MOCK_CATEGORIES);
+  const [tableList, setTableList] = useState<TableNumber[]>([...DROPOUT_TABLES]);
   const [tableCapacities, setTableCapacities] = useState<Record<string, number>>(DEFAULT_CAPACITIES);
   const [staff, setStaff] = useState<StaffMember[]>(INITIAL_STAFF);
   const [currentStaff, setCurrentStaff] = useState<StaffMember | null>(INITIAL_STAFF[0]);
@@ -200,8 +204,20 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
   // Load state from localStorage on client mount
   useEffect(() => {
     try {
+      const storedTableList = localStorage.getItem(LOCAL_STORAGE_KEYS.TABLE_LIST);
+      if (storedTableList) {
+        try {
+          const parsed = JSON.parse(storedTableList);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setTableList(parsed);
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const storedTable = localStorage.getItem(LOCAL_STORAGE_KEYS.SELECTED_TABLE);
-      if (storedTable && DROPOUT_TABLES.includes(storedTable as TableNumber)) {
+      if (storedTable) {
         setSelectedTableState(storedTable as TableNumber);
       }
 
@@ -316,6 +332,28 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
         }
       } catch (err) {
         console.warn("Categories sync skipped:", err);
+      }
+    };
+
+    const syncTables = async () => {
+      try {
+        const { data: dbTables, error } = await supabase
+          .from("restaurant_tables")
+          .select("table_number, capacity, is_active")
+          .eq("is_active", true)
+          .order("table_number", { ascending: true });
+
+        if (isMounted && !error && dbTables && dbTables.length > 0) {
+          const list = dbTables.map((t) => t.table_number as TableNumber);
+          setTableList(list);
+          const caps: Record<string, number> = {};
+          dbTables.forEach((t) => {
+            caps[t.table_number] = t.capacity || 4;
+          });
+          setTableCapacities((prev) => ({ ...prev, ...caps }));
+        }
+      } catch (err) {
+        console.warn("Tables sync skipped:", err);
       }
     };
 
@@ -511,6 +549,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
 
     // Initial sync
     syncCategories();
+    syncTables();
     syncMenuItems();
     syncOrders();
 
@@ -624,6 +663,15 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
       console.warn("Failed saving table capacities", e);
     }
   }, [tableCapacities, isHydrated]);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.TABLE_LIST, JSON.stringify(tableList));
+    } catch (e) {
+      console.warn("Failed saving table list", e);
+    }
+  }, [tableList, isHydrated]);
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -1322,6 +1370,94 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
     }));
   };
 
+  const addTable = async (tableNum: string, capacity = 4): Promise<boolean> => {
+    let cleanName = tableNum.trim();
+    if (!cleanName.toLowerCase().startsWith("table")) {
+      const numMatch = cleanName.match(/^\d+$/);
+      cleanName = numMatch ? `Table ${cleanName.padStart(2, "0")}` : `Table ${cleanName}`;
+    }
+
+    if (tableList.includes(cleanName as TableNumber)) {
+      toast.error(`${cleanName} already exists!`);
+      return false;
+    }
+
+    const updated = [...tableList, cleanName as TableNumber].sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, "") || "0", 10);
+      const numB = parseInt(b.replace(/\D/g, "") || "0", 10);
+      return numA - numB;
+    });
+
+    setTableList(updated);
+    setTableCapacities((prev) => ({
+      ...prev,
+      [cleanName]: capacity,
+    }));
+
+    const supabase = getSupabaseBrowserClient();
+    if (supabase) {
+      try {
+        const slug = cleanName.toLowerCase().replace(/\s+/g, "-");
+        await supabase.from("restaurant_tables").upsert(
+          {
+            table_number: cleanName,
+            qr_slug: slug,
+            capacity,
+            status: "available",
+            is_active: true,
+          },
+          { onConflict: "table_number" }
+        );
+      } catch (e) {
+        console.warn("Could not insert table into Supabase:", e);
+      }
+    }
+
+    toast.success(`${cleanName} added to dining floor!`);
+    return true;
+  };
+
+  const removeTable = async (tableNum: TableNumber): Promise<boolean> => {
+    const hasActiveOrder = orders.some(
+      (o) =>
+        o.tableNumber === tableNum &&
+        normalizeOrderStatus(o.status) !== "COMPLETED" &&
+        normalizeOrderStatus(o.status) !== "CANCELLED"
+    );
+
+    if (hasActiveOrder) {
+      toast.error(`Cannot remove ${tableNum} because it has an active order in progress.`);
+      return false;
+    }
+
+    if (tableList.length <= 1) {
+      toast.error("At least one dining table must remain active.");
+      return false;
+    }
+
+    const updated = tableList.filter((t) => t !== tableNum);
+    setTableList(updated);
+
+    if (selectedTable === tableNum) {
+      setSelectedTable(updated[0] || null);
+    }
+
+    const supabase = getSupabaseBrowserClient();
+    if (supabase) {
+      try {
+        await supabase
+          .from("restaurant_tables")
+          .update({ is_active: false })
+          .eq("table_number", tableNum);
+      } catch (e) {
+        console.warn("Could not deactivate table in Supabase:", e);
+      }
+    }
+
+    toast.success(`${tableNum} removed from dining floor.`);
+    return true;
+  };
+
   // Staff CRUD
   const addStaff = (member: Omit<StaffMember, "id">) => {
     const newMember: StaffMember = {
@@ -1433,9 +1569,9 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
     return orders.filter((o) => o.tableNumber === tableNumber);
   };
 
-  // Build reactive status for all 10 tables
+  // Build reactive status for all configured tables
   const tables: TableState[] = useMemo(() => {
-    return DROPOUT_TABLES.map((tableNum) => {
+    return tableList.map((tableNum) => {
       const tableNumSlug = tableNum.toLowerCase().replace(/\s+/g, "-");
       const activeOrder = orders.find(
         (o) =>
@@ -1460,7 +1596,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
         occupiedSince: activeOrder?.createdAt,
       };
     });
-  }, [orders, tableCapacities]);
+  }, [tableList, orders, tableCapacities]);
 
   const resetToDefaults = () => {
     localStorage.clear();
@@ -1468,6 +1604,7 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
     setMenuItems(MOCK_MENU_ITEMS);
     setCategories(MOCK_CATEGORIES);
     setTableCapacities(DEFAULT_CAPACITIES);
+    setTableList([...DROPOUT_TABLES]);
     setStaff(INITIAL_STAFF);
     setCart([]);
     setSelectedTableState(null);
@@ -1482,6 +1619,8 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
         setSelectedTable,
         tables,
         updateTableCapacity,
+        addTable,
+        removeTable,
         menuItems,
         categories,
         toggleItemAvailability,

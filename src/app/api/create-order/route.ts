@@ -97,17 +97,51 @@ export async function POST(req: NextRequest) {
 
     const razorpayOrder = await razorpay.orders.create(options);
 
-    // If orderId is provided, optionally link or log in Supabase
+    // If orderId is provided, link or update payment record in Supabase
     if (body.orderId && supabaseAdmin) {
       try {
-        await supabaseAdmin.from("payments").insert({
-          order_id: body.orderId,
-          amount_paise: Math.round(amount),
-          currency,
-          status: "PENDING",
-          provider: "razorpay",
-          merchant_transaction_id: razorpayOrder.id,
-        });
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.orderId);
+        
+        // Find existing order id if orderNumber was passed
+        let targetOrderId = body.orderId;
+        if (!isUuid) {
+          const { data: ord } = await supabaseAdmin
+            .from("orders")
+            .select("id")
+            .eq("order_number", body.orderId)
+            .maybeSingle();
+          if (ord?.id) {
+            targetOrderId = ord.id;
+          }
+        }
+
+        // Check if payment row already exists for this order
+        const { data: existingPayment } = await supabaseAdmin
+          .from("payments")
+          .select("id")
+          .eq("order_id", targetOrderId)
+          .maybeSingle();
+
+        if (existingPayment?.id) {
+          await supabaseAdmin
+            .from("payments")
+            .update({
+              merchant_transaction_id: razorpayOrder.id,
+              provider: "razorpay",
+              status: "PENDING",
+              amount_paise: Math.round(amount),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", existingPayment.id);
+        } else {
+          await supabaseAdmin.from("payments").insert({
+            order_id: targetOrderId,
+            amount_paise: Math.round(amount),
+            status: "PENDING",
+            provider: "razorpay",
+            merchant_transaction_id: razorpayOrder.id,
+          });
+        }
       } catch (dbErr) {
         console.warn("Could not log Razorpay order to Supabase payments table:", dbErr);
       }

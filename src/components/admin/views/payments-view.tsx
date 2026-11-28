@@ -115,6 +115,10 @@ export function PaymentsView() {
 
   useEffect(() => {
     fetchPayments();
+    const interval = setInterval(() => {
+      fetchPayments();
+    }, 5000);
+    return () => clearInterval(interval);
   }, [fetchPayments]);
 
   // Combined transactions from DB or mapped from store, enriched with item details

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getUPIPayClient } from "@/lib/payments/phonepe";
+import { getRazorpayClient } from "@/lib/payments/razorpay";
 import { paiseToRupees } from "@/lib/utils";
 import { safeServerError } from "@/lib/security/sanitize";
 
@@ -8,17 +8,16 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 /**
- * Server-Side Payment Verification Endpoint
+ * Server-Side Payment Verification Endpoint for Razorpay
  * 
- * Used after customer returns from PhonePe or for real-time order polling.
- * Performs independent query to PhonePe's /pg/v1/status/{merchantId}/{transactionId} API.
- * Never trusts client claims.
+ * Verifies payment status directly with Razorpay API.
+ * Never trusts unverified client claims.
  */
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const orderId = url.searchParams.get("orderId");
-    const mtx = url.searchParams.get("mtx"); // merchantTransactionId
+    const mtx = url.searchParams.get("mtx"); // merchantTransactionId (e.g. order_xxx or MT_xxx)
 
     if (!orderId && !mtx) {
       return NextResponse.json(
@@ -28,7 +27,6 @@ export async function GET(req: NextRequest) {
     }
 
     const supabaseAdmin = getSupabaseAdminClient();
-    const client = getUPIPayClient();
 
     let paymentRecord: {
       id: string;
@@ -92,7 +90,7 @@ export async function GET(req: NextRequest) {
     if (paymentRecord?.status?.toUpperCase() === "PAID" || orderRecord?.payment_status?.toUpperCase() === "PAID") {
       if (supabaseAdmin && paymentRecord?.id && paymentRecord?.status?.toUpperCase() !== "PAID") {
         await supabaseAdmin.from("payments").update({
-          status: "paid",
+          status: "PAID",
           settled_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }).eq("id", paymentRecord.id);
@@ -110,78 +108,119 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const transactionIdToCheck = paymentRecord?.merchant_transaction_id || mtx;
-    if (!transactionIdToCheck) {
-      return NextResponse.json(
-        {
-          verified: false,
-          status: "PENDING",
-          message: "No active payment transaction found to verify.",
-        },
-        { status: 200 }
-      );
+    // Query Razorpay
+    let razorpay;
+    try {
+      razorpay = getRazorpayClient();
+    } catch {
+      // Razorpay client initialization error or not configured
     }
 
-    const expectedAmount = paymentRecord ? Number(paymentRecord.amount_paise) : undefined;
+    if (razorpay) {
+      const razorpayOrderId = paymentRecord?.merchant_transaction_id || (mtx?.startsWith("order_") ? mtx : null);
 
-    // Call PhonePe Status API via UPIPay
-    try {
-      const pspStatus = await client.checkStatus(transactionIdToCheck, {
-        expectedAmount,
-      });
+      if (razorpayOrderId && razorpayOrderId.startsWith("order_")) {
+        try {
+          const paymentsRes = await razorpay.orders.fetchPayments(razorpayOrderId);
+          const successfulPayment = (paymentsRes?.items || []).find(
+            (p: { status: string }) => p.status === "captured" || p.status === "authorized"
+          );
 
-      if (pspStatus.status === "SUCCESS") {
-        // Mark as PAID in Supabase
-        if (supabaseAdmin && paymentRecord) {
-          await supabaseAdmin.rpc("settle_phonepe_payment", {
-            p_merchant_transaction_id: transactionIdToCheck,
-            p_provider_reference_id: pspStatus.transactionId || null,
-            p_amount_paise: pspStatus.amount,
-            p_raw_payload: pspStatus.rawResponse as Record<string, unknown>,
+          if (successfulPayment) {
+            if (supabaseAdmin) {
+              if (orderRecord?.id) {
+                await supabaseAdmin.from("orders").update({
+                  payment_status: "PAID",
+                  payment_method: "upi_online",
+                  updated_at: new Date().toISOString(),
+                }).eq("id", orderRecord.id);
+              }
+              const pId = paymentRecord?.id;
+              if (pId) {
+                await supabaseAdmin.from("payments").update({
+                  status: "PAID",
+                  provider: "razorpay",
+                  provider_reference_id: successfulPayment.id,
+                  settled_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                }).eq("id", pId);
+              }
+            }
+
+            return NextResponse.json({
+              verified: true,
+              status: "PAID",
+              orderId: orderRecord?.id || orderId,
+              orderNumber: orderRecord?.order_number,
+              merchantTransactionId: razorpayOrderId,
+              providerReferenceId: successfulPayment.id,
+              amountPaise: Number(successfulPayment.amount),
+              amountRupees: paiseToRupees(Number(successfulPayment.amount)),
+              message: "Razorpay payment verified as captured & settled.",
+            });
+          }
+        } catch (fetchErr) {
+          console.warn("Could not query Razorpay order payments:", fetchErr);
+        }
+      }
+
+      // Check recent payments by matching notes.orderId
+      try {
+        const recentPayments = await razorpay.payments.all({ count: 25 });
+        const matched = (recentPayments?.items || []).find((p: { notes?: Record<string, string>; status: string; id: string; order_id: string; amount: number | string }) => {
+          const noteOrdId = p.notes?.orderId;
+          const isMatch = noteOrdId && (
+            noteOrdId === orderRecord?.id ||
+            noteOrdId === orderRecord?.order_number ||
+            noteOrdId === orderId
+          );
+          return isMatch && (p.status === "captured" || p.status === "authorized");
+        });
+
+        if (matched) {
+          if (supabaseAdmin) {
+            if (orderRecord?.id) {
+              await supabaseAdmin.from("orders").update({
+                payment_status: "PAID",
+                payment_method: "upi_online",
+                updated_at: new Date().toISOString(),
+              }).eq("id", orderRecord.id);
+            }
+            if (paymentRecord?.id) {
+              await supabaseAdmin.from("payments").update({
+                status: "PAID",
+                provider: "razorpay",
+                merchant_transaction_id: matched.order_id || paymentRecord.merchant_transaction_id,
+                provider_reference_id: matched.id,
+                settled_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              }).eq("id", paymentRecord.id);
+            }
+          }
+
+          return NextResponse.json({
+            verified: true,
+            status: "PAID",
+            orderId: orderRecord?.id || orderId,
+            orderNumber: orderRecord?.order_number,
+            merchantTransactionId: matched.order_id,
+            providerReferenceId: matched.id,
+            amountPaise: Number(matched.amount),
+            amountRupees: paiseToRupees(Number(matched.amount)),
+            message: "Matched payment in Razorpay records as settled.",
           });
         }
-
-        return NextResponse.json({
-          verified: true,
-          status: "PAID",
-          orderId: orderRecord?.id || orderId,
-          orderNumber: orderRecord?.order_number,
-          merchantTransactionId: transactionIdToCheck,
-          providerReferenceId: pspStatus.transactionId,
-          amountPaise: pspStatus.amount,
-          amountRupees: paiseToRupees(pspStatus.amount),
-        });
-      } else if (pspStatus.status === "FAILED") {
-        if (supabaseAdmin && paymentRecord) {
-          await supabaseAdmin
-            .from("payments")
-            .update({ status: "FAILED", updated_at: new Date().toISOString() })
-            .eq("id", paymentRecord.id);
-        }
-
-        return NextResponse.json({
-          verified: false,
-          status: "FAILED",
-          merchantTransactionId: transactionIdToCheck,
-          message: "Payment was not completed or failed with provider.",
-        });
-      } else {
-        return NextResponse.json({
-          verified: false,
-          status: "PENDING",
-          merchantTransactionId: transactionIdToCheck,
-          message: "Payment is pending authorization.",
-        });
+      } catch (recentErr) {
+        console.warn("Could not query recent Razorpay payments:", recentErr);
       }
-    } catch (apiErr: unknown) {
-      const msg = apiErr instanceof Error ? apiErr.message : "Status check failed";
-      return NextResponse.json({
-        verified: false,
-        status: paymentRecord?.status?.toUpperCase() || "PENDING",
-        merchantTransactionId: transactionIdToCheck,
-        message: msg,
-      });
     }
+
+    return NextResponse.json({
+      verified: false,
+      status: "PENDING",
+      merchantTransactionId: paymentRecord?.merchant_transaction_id || mtx,
+      message: "Payment is pending authorization in Razorpay gateway.",
+    });
   } catch (err: unknown) {
     console.error("Payment Verification Error:", err);
     return NextResponse.json({ error: safeServerError(err, "Verification route failure") }, { status: 500 });

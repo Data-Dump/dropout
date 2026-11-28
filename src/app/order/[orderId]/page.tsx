@@ -149,6 +149,19 @@ export default function OrderTrackingPage() {
     }
   }, [order, paymentSession, updatePaymentStatus]);
 
+  // Auto-poll payment status while unpaid
+  useEffect(() => {
+    if (!order) return;
+    const isPaid = normalizePaymentStatus(order.paymentStatus) === "PAID";
+    if (isPaid) return;
+
+    const interval = setInterval(() => {
+      handleVerifyPayment(true);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [order, handleVerifyPayment]);
+
   const handlePayWithRazorpay = async () => {
     if (!order) return;
     setIsVerifyingPayment(true);

@@ -71,21 +71,44 @@ export async function POST(req: NextRequest) {
       if (supabaseAdmin) {
         try {
           const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
-          await supabaseAdmin
+          const { data: ord } = await supabaseAdmin
             .from("orders")
             .update({
               payment_status: "PAID",
               payment_method: "upi_online",
+              updated_at: new Date().toISOString(),
             })
-            .eq(isUuid ? "id" : "order_number", orderId);
+            .eq(isUuid ? "id" : "order_number", orderId)
+            .select("id")
+            .maybeSingle();
 
-          await supabaseAdmin
-            .from("payments")
-            .update({
-              status: "PAID",
-              provider_reference_id: razorpay_payment_id,
-            })
-            .eq("merchant_transaction_id", razorpay_order_id);
+          const targetOrderId = ord?.id || (isUuid ? orderId : null);
+
+          // Update payment record by order_id and/or merchant_transaction_id
+          if (targetOrderId) {
+            await supabaseAdmin
+              .from("payments")
+              .update({
+                status: "PAID",
+                provider: "razorpay",
+                merchant_transaction_id: razorpay_order_id,
+                provider_reference_id: razorpay_payment_id,
+                settled_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("order_id", targetOrderId);
+          } else {
+            await supabaseAdmin
+              .from("payments")
+              .update({
+                status: "PAID",
+                provider: "razorpay",
+                provider_reference_id: razorpay_payment_id,
+                settled_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("merchant_transaction_id", razorpay_order_id);
+          }
         } catch (dbErr) {
           console.warn("Could not update Supabase order payment status:", dbErr);
         }

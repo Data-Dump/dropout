@@ -232,7 +232,12 @@ export function RestaurantProvider({ children }: { children: React.ReactNode }) 
           const parsed = JSON.parse(storedMenuItems);
           if (Array.isArray(parsed) && parsed.length > 0) {
             const cleaned = parsed.filter(
-              (p: MenuItem) => p.id !== "item-test-1rs" && !p.name.includes("₹1")
+              (p: MenuItem) =>
+                p.id !== "item-test-1rs" &&
+                !p.name.includes("₹1") &&
+                p.name !== "Bati with Ghee" &&
+                p.name !== "Bati without Ghee" &&
+                p.id !== "item-081"
             );
             const missingMockItems = MOCK_MENU_ITEMS.filter(
               (m) => !cleaned.some((p: MenuItem) => p.id === m.id || p.name === m.name)

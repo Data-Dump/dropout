@@ -88,8 +88,7 @@ All 106 menu items in **DROPOUT Cafe & Restro** now use dedicated local, optimiz
 | 77 | Veg Wrap | Wraps | `/images/menu/veg-wrap.jpg` | Local Optimized Food Photography |
 | 78 | Aloo Tikki Wrap | Wraps | `/images/menu/aloo-tikki-wrap.jpg` | Local Optimized Food Photography |
 | 79 | Paneer Tikki Wrap | Wraps | `/images/menu/paneer-tikki-wrap.jpg` | Local Optimized Food Photography |
-| 80 | Bati with Ghee | Special Items | `/images/menu/bati-ghee.jpg` | Local Optimized Food Photography |
-| 81 | Bati without Ghee | Special Items | `/images/menu/bati-without-ghee.jpg` | Local Optimized Food Photography |
+| 80 | Dal Baati (3 Pieces) | Special Items | `/images/menu/dal-baati.jpg` | Local Optimized Food Photography |
 | 82 | Normal Tea | Tea | `/images/menu/normal-tea.jpg` | Local Optimized Food Photography |
 | 83 | Kulhad Tea | Tea | `/images/menu/kulhad-chai.jpg` | Local Optimized Food Photography |
 | 84 | Masala Tea | Tea | `/images/menu/masala-chai.jpg` | Local Optimized Food Photography |
